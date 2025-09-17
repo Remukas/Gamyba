@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,13 +42,12 @@ const InventoryCycles = () => {
   const [inspector, setInspector] = useState('');
   const [notes, setNotes] = useState('');
 
-  const getCurrentWeek = useCallback(() => {
+  const getCurrentWeek = () => {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
     const diff = now - start;
     const oneWeek = 1000 * 60 * 60 * 24 * 7;
     return Math.ceil(diff / oneWeek);
-  }, []);
 
   // Generate weeks for current year
   const weeks = useMemo(() => {
@@ -73,15 +72,14 @@ const InventoryCycles = () => {
     return weeks;
   }, [inventoryRecords, getCurrentWeek]);
 
-  const handleWeekClick = useCallback((week) => {
+  const handleWeekClick = (week) => {
     setSelectedWeek(week);
     setShowWeekDialog(true);
     setUploadedFile(null);
     setInspector('');
     setNotes('');
-  }, []);
 
-  const downloadExcelTemplate = useCallback(() => {
+  const downloadExcelTemplate = () => {
     if (!selectedWeek) return;
 
     // Sukurti Excel failą su komponentų sąrašu
@@ -115,9 +113,8 @@ const InventoryCycles = () => {
       title: "Excel failas atsisiųstas!",
       description: `Inventorizacijos šablonas ${selectedWeek.week} savaitei paruoštas.`
     });
-  }, [selectedWeek, componentsInventory, toast]);
 
-  const handleFileUpload = useCallback((event) => {
+  const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -155,9 +152,8 @@ const InventoryCycles = () => {
       }
     };
     reader.readAsArrayBuffer(file);
-  }, [toast]);
 
-  const completeInventory = useCallback(async () => {
+  const completeInventory = async () => {
     if (!uploadedFile || !inspector.trim()) {
       toast({
         title: "Klaida",
@@ -210,7 +206,6 @@ const InventoryCycles = () => {
         variant: "destructive"
       });
     }
-  }, [uploadedFile, inspector, selectedWeek, componentsInventory, updateComponent, toast]);
 
   const stats = useMemo(() => {
     const completedWeeks = weeks.filter(w => w.isCompleted).length;
