@@ -327,19 +327,20 @@ const ProductionHierarchy = () => {
   return (
     <div className="h-screen w-screen flex bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Sidebar Toggle Button */}
-      <Button
-        onClick={toggleSidebar}
-        className="fixed left-4 top-4 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full"
-        size="icon"
-      >
-        {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-      </Button>
 
       {/* Sidebar */}
       <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0' : 'w-80'} overflow-hidden bg-white/80 backdrop-blur-sm border-r shadow-lg`}>
         <div className="p-6 h-full flex flex-col">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-6 relative">
+            {/* Sidebar Toggle Button */}
+            <Button
+              onClick={toggleSidebar}
+              className="absolute -right-3 top-0 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-0 rounded-full w-6 h-6 p-0"
+              size="sm"
+            >
+              {isSidebarCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+            </Button>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Gamybos medis
             </h1>
