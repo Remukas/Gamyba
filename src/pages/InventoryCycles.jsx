@@ -20,7 +20,8 @@ const InventoryCycles = () => {
   const { toast } = useToast();
   
   const [showTutorial, setShowTutorial] = useState(false);
-  const [inventoryRecords] = useState([
+
+  const inventoryRecords = [
     {
       id: 1,
       component_name: 'Variklio korpusas',
@@ -39,7 +40,7 @@ const InventoryCycles = () => {
       week_number: 'W02',
       inspector: 'Marija Kazlauskienė'
     }
-  ]);
+  ];
 
   const getCurrentWeek = () => {
     const now = new Date();
@@ -51,7 +52,6 @@ const InventoryCycles = () => {
 
   const currentWeek = getCurrentWeek();
 
-  // Generate simple weeks array
   const weeks = [];
   for (let week = 1; week <= 12; week++) {
     const weekStr = `W${week.toString().padStart(2, '0')}`;
@@ -87,7 +87,6 @@ const InventoryCycles = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
-        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent mb-2">
@@ -105,7 +104,6 @@ const InventoryCycles = () => {
           </Button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
@@ -164,7 +162,6 @@ const InventoryCycles = () => {
           </motion.div>
         </div>
 
-        {/* Weekly Calendar */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
             <CardHeader>
@@ -201,7 +198,6 @@ const InventoryCycles = () => {
           </Card>
         </motion.div>
 
-        {/* Recent Records */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mt-8">
             <CardHeader>
@@ -243,7 +239,6 @@ const InventoryCycles = () => {
           </Card>
         </motion.div>
 
-        {/* Tutorial Dialog */}
         {showTutorial && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <motion.div
