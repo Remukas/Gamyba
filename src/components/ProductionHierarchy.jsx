@@ -96,7 +96,7 @@ const ProductionHierarchy = () => {
       const categorySubassemblies = subassemblies[category.id] || [];
       const totalSubassemblies = categorySubassemblies.length;
       const completedSubassemblies = categorySubassemblies.filter(sa => 
-        sa.status === 'completed' && sa.quantity > 0
+        sa.quantity > 0
       ).length;
       
       const percentage = totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0;
@@ -432,7 +432,7 @@ const ProductionHierarchy = () => {
                     {selectedCategory === category.id && (
                       <div className="ml-4 mt-2 space-y-1">
                         {categorySubassemblies.map(sa => {
-                          const isCompleted = sa.status === 'completed' && sa.quantity > 0;
+                          const isCompleted = sa.quantity > 0;
                           return (
                             <div key={sa.id} className="flex items-center gap-2 text-xs text-gray-600 p-1 hover:bg-gray-50 rounded">
                               {isCompleted ? (
@@ -442,6 +442,9 @@ const ProductionHierarchy = () => {
                               )}
                               <span className={isCompleted ? 'text-green-700 font-medium' : ''}>
                                 {sa.name}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ({sa.quantity} vnt.)
                               </span>
                             </div>
                           );
