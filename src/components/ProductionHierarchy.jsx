@@ -474,23 +474,25 @@ const ProductionHierarchy = () => {
       )}
 
       {/* Dialogs */}
-      <SubassemblyDetails
-        subassembly={selectedSubassembly}
-        onClose={() => setSelectedSubassembly(null)}
-        onUpdate={(updates) => handleUpdateSubassembly(selectedSubassembly.id, updates)}
-        onDelete={() => handleDeleteSubassembly(selectedSubassembly.id)}
-        onConnect={() => {
-          setIsConnecting(true);
-          setConnectionSource(selectedSubassembly.id);
-          setSelectedSubassembly(null);
-          toast({
-            title: "Sujungimo režimas",
-            description: "Pasirinkite subasemblį, kurį norite sujungti"
-          });
-        }}
-        statuses={statuses}
-        onShowComponents={() => setShowComponentDialog(true)}
-      />
+      {selectedSubassembly && (
+        <SubassemblyDetails
+          subassembly={selectedSubassembly}
+          onClose={() => setSelectedSubassembly(null)}
+          onUpdate={(updates) => handleUpdateSubassembly(selectedSubassembly.id, updates)}
+          onDelete={() => handleDeleteSubassembly(selectedSubassembly.id)}
+          onConnect={() => {
+            setIsConnecting(true);
+            setConnectionSource(selectedSubassembly.id);
+            setSelectedSubassembly(null);
+            toast({
+              title: "Sujungimo režimas",
+              description: "Pasirinkite subasemblį, kurį norite sujungti"
+            });
+          }}
+          statuses={statuses}
+          onShowComponents={() => setShowComponentDialog(true)}
+        />
+      )}
 
       <AddSubassemblyDialog
         open={showAddDialog}
