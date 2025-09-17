@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { useComponents } from '@/context/ComponentsContext';
+import * as XLSX from 'xlsx';
 import { 
   Calendar, 
   Package, 
@@ -20,7 +23,9 @@ import {
   BarChart3,
   Settings,
   Download,
-  HelpCircle,
+  Upload,
+  FileSpreadsheet,
+  User
   RefreshCw,
   Target,
   TrendingUp,
@@ -46,6 +51,12 @@ const InventoryCycles = () => {
   
   const [inventoryRecords, setInventoryRecords] = useState([]);
   const [componentOverrides, setComponentOverrides] = useState([]);
+  const [showWeekDialog, setShowWeekDialog] = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [weeklyFile, setWeeklyFile] = useState(null);
+  const [weeklyData, setWeeklyData] = useState([]);
+  const [inspector, setInspector] = useState('');
+  const [inventoryNotes, setInventoryNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
   // Naujo įrašo forma
