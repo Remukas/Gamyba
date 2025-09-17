@@ -62,6 +62,12 @@ const ProductionHierarchy = () => {
   const [showExcelUpdate, setShowExcelUpdate] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: 'ai', text: 'Sveiki! Aš esu jūsų gamybos strategas. Galite klausti apie komponentus, subasemblius, atsargas ar gamybos planavimą. Pvz: "Kokios mano atsargos?" arba "Kas įeina į Cart SA-10000170?"' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const messagesEndRef = useRef(null);
   
   // Connection state
   const [isConnecting, setIsConnecting] = useState(false);
@@ -361,6 +367,121 @@ const ProductionHierarchy = () => {
     });
   }, [subassemblies, setSubassemblies, toast]);
 
+  // AI Chat Functions
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = () => {
+    if (input.trim() === '') return;
+
+    const newMessages = [...messages, { sender: 'user', text: input }];
+    setMessages(newMessages);
+    setInput('');
+    setIsThinking(true);
+
+    setTimeout(() => {
+      const aiResponse = generateAIResponse(input);
+      setMessages(prev => [...prev, aiResponse]);
+      setIsThinking(false);
+    }, 1500);
+  };
+
+  const generateAIResponse = (userInput) => {
+    const lowerInput = userInput.toLowerCase();
+
+    // Atsargų analizė
+    if (lowerInput.includes('atsargos') || lowerInput.includes('likučiai') || lowerInput.includes('komponentai')) {
+      const lowStockComponents = componentsInventory.filter(c => c.stock < 10);
+      return {
+        sender: 'ai',
+        text: `Analizuoju jūsų atsargas. Turite ${componentsInventory.length} komponentų tipų. ${lowStockComponents.length > 0 ? `Dėmesio: ${lowStockComponents.length} komponentų turi mažas atsargas!` : 'Visų komponentų atsargos pakankamos.'}`,
+        inventoryAnalysis: {
+          lowStockComponents: lowStockComponents.map(c => ({ name: c.name, stock: c.stock, leadTime: c.leadTimeDays }))
+        }
+      };
+    }
+
+    // Sudėties užklausa
+    if (lowerInput.includes('kas įeina') || lowerInput.includes('sudėtis')) {
+      const targetName = lowerInput.replace(/kas įeina į|sudėtis/g, '').trim();
+      const targetNode = Object.values(subassemblies).flat().find(sa => 
+        sa.name.toLowerCase().includes(targetName)
+      );
+
+      if (targetNode && targetNode.components && targetNode.components.length > 0) {
+        const componentDetails = targetNode.components.map(c => {
+          const componentData = componentsInventory.find(inv => inv.id === c.componentId);
+          return {
+            name: componentData ? componentData.name : 'Nežinomas komponentas',
+            quantity: c.requiredQuantity
+          };
+        });
+
+        return {
+          sender: 'ai',
+          text: `Radau informaciją apie "${targetNode.name}":`,
+          queryResult: {
+            nodeName: targetNode.name,
+            components: componentDetails
+          }
+        };
+      }
+    }
+
+    // Statistikos analizė
+    if (lowerInput.includes('statistika') || lowerInput.includes('progresą') || lowerInput.includes('kiek')) {
+      const categoryStats = categories.map(category => {
+        const categorySubassemblies = subassemblies[category.id] || [];
+        const completed = categorySubassemblies.filter(sa => sa.quantity > 0).length;
+        const total = categorySubassemblies.length;
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        return { name: category.name, completed, total, percentage };
+      });
+
+      return {
+        sender: 'ai',
+        text: 'Štai jūsų gamybos statistika pagal kategorijas:',
+        statisticsAnalysis: { categoryStats }
+      };
+    }
+
+    // Gamybos planavimas
+    if (lowerInput.includes('pagamink') || lowerInput.includes('sukurk') || lowerInput.includes('planuok')) {
+      const quantityMatch = lowerInput.match(/(\d+)/);
+      const quantity = quantityMatch ? parseInt(quantityMatch[1], 10) : 1;
+      
+      return {
+        sender: 'ai',
+        text: `Supratau! Planuoju gamybos procesą ${quantity} vienetų. Štai preliminarus planas:`,
+        plan: [
+          { name: 'Pagrindinis subasemblis', targetQuantity: quantity },
+          { name: 'Komponentų paruošimas', targetQuantity: quantity * 2 },
+          { name: 'Surinkimas', targetQuantity: quantity }
+        ]
+      };
+    }
+
+    // Bendras atsakymas
+    return {
+      sender: 'ai',
+      text: 'Galiu padėti su: atsargų analize, komponentų sudėtimi, gamybos statistika, planavimo klausimais. Pabandykite klausti: "Kokios mano atsargos?" arba "Kas įeina į [produkto pavadinimas]?"'
+    };
+  };
+
+  const handleConfirmPlan = (plan) => {
+    toast({
+      title: "Planas patvirtintas!",
+      description: "AI planas bus įgyvendintas gamybos sistemoje."
+    });
+    setShowAIAssistant(false);
+  };
+
   const renderConnections = () => {
     const connections = [];
     
@@ -573,14 +694,6 @@ const ProductionHierarchy = () => {
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
           </Button>
-
-          <Button
-            onClick={() => setShowAIAssistant(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-8 py-4 h-auto min-w-[200px] whitespace-nowrap text-base font-medium"
-          >
-            <Bot className="h-4 w-4 mr-2" />
-            AI Asistentas
-          </Button>
         </div>
 
         {/* ZOOM VALDYMO MYGTUKAI - CENTRE VIRŠUJE */}
@@ -665,6 +778,165 @@ const ProductionHierarchy = () => {
             {/* Render Connections */}
             {renderConnections()}
           </div>
+        </div>
+
+        {/* PLŪDURIUOJANTIS AI CHAT DEŠINIAME KAMPE */}
+        <div className="fixed bottom-6 right-6 z-50">
+          {!showAIAssistant ? (
+            <Button
+              onClick={() => setShowAIAssistant(true)}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200 rounded-full w-16 h-16 p-0 border-4 border-white"
+              title="AI Gamybos Asistentas"
+            >
+              <Bot className="h-8 w-8" />
+            </Button>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-2xl border-2 border-purple-200 w-96 h-[600px] flex flex-col overflow-hidden">
+              {/* Chat Header */}
+              <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 p-2 rounded-full">
+                    <Bot className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">AI Gamybos Strategas</h3>
+                    <p className="text-xs text-purple-100">Jūsų protingas asistentas</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowAIAssistant(false)}
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-white/20 h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Chat Messages */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50">
+                {messages.map((msg, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] rounded-2xl p-3 text-sm ${
+                      msg.sender === 'user' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-white border shadow-sm'
+                    }`}>
+                      <p>{msg.text}</p>
+                      
+                      {/* Render special content */}
+                      {msg.queryResult && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h4 className="font-semibold text-xs mb-2 flex items-center gap-1">
+                            <Package className="h-3 w-3" />
+                            Sudėtis:
+                          </h4>
+                          <div className="bg-gray-50 p-2 rounded-lg text-xs">
+                            {msg.queryResult.components.map((comp, i) => (
+                              <div key={i} className="flex justify-between">
+                                <span>{comp.name}</span>
+                                <span className="font-bold">{comp.quantity} vnt.</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {msg.inventoryAnalysis && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h4 className="font-semibold text-xs mb-2 text-red-600">⚠️ Mažos atsargos:</h4>
+                          <div className="bg-red-50 p-2 rounded-lg text-xs">
+                            {msg.inventoryAnalysis.lowStockComponents.slice(0, 3).map((comp, i) => (
+                              <div key={i} className="flex justify-between text-red-700">
+                                <span>{comp.name}</span>
+                                <span>{comp.stock} vnt.</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {msg.statisticsAnalysis && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h4 className="font-semibold text-xs mb-2">📊 Statistika:</h4>
+                          <div className="bg-blue-50 p-2 rounded-lg text-xs space-y-1">
+                            {msg.statisticsAnalysis.categoryStats.map((cat, i) => (
+                              <div key={i} className="flex justify-between">
+                                <span>{cat.name}</span>
+                                <span className="font-bold text-blue-600">{cat.percentage}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {msg.plan && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h4 className="font-semibold text-xs mb-2">🎯 Gamybos planas:</h4>
+                          <div className="bg-green-50 p-2 rounded-lg text-xs max-h-32 overflow-y-auto">
+                            {msg.plan.map((item, i) => (
+                              <div key={i} className="mb-1">
+                                <span className="font-medium">{item.name}</span>
+                                <span className="text-gray-600 ml-2">({item.targetQuantity} vnt.)</span>
+                              </div>
+                            ))}
+                          </div>
+                          <Button 
+                            size="sm" 
+                            className="w-full mt-2 text-xs h-7"
+                            onClick={() => handleConfirmPlan(msg.plan)}
+                          >
+                            ✅ Patvirtinti planą
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+                
+                {isThinking && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border shadow-sm rounded-2xl p-3 flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce delay-200"></div>
+                      </div>
+                      <span className="text-xs text-gray-500">AI galvoja...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="p-3 bg-white border-t">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Klausti AI..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                    className="text-sm"
+                    disabled={isThinking}
+                  />
+                  <Button
+                    size="icon"
+                    onClick={handleSend}
+                    disabled={isThinking || input.trim() === ''}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tutorial Dialog */}
@@ -768,7 +1040,6 @@ const ProductionHierarchy = () => {
           allSubassemblies={Object.values(subassemblies).flat()}
         />
 
-        <ExcelImportDialog
           open={showExcelImport}
           onOpenChange={setShowExcelImport}
           onImportSubassemblyWithComponents={handleImportSubassemblyWithComponents}
