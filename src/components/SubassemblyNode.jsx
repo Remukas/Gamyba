@@ -50,7 +50,7 @@ import React, { useState, useMemo } from 'react';
 
       const hasIssues = subassembly.status !== 'completed' && subassembly.quantity < subassembly.targetQuantity;
       
-      const backgroundClass = subassembly.quantity > 0 ? 'bg-green-100/90' : 'bg-red-100/90';
+      const backgroundClass = subassembly.quantity > 0 ? 'bg-gradient-to-br from-green-100 to-green-200' : 'bg-gradient-to-br from-red-100 to-red-200';
 
       return (
         <TooltipProvider delayDuration={200}>
@@ -62,34 +62,50 @@ import React, { useState, useMemo } from 'react';
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className={`absolute subassembly-node cursor-grab active:cursor-grabbing ${isSelected ? 'ring-2 ring-blue-500 shadow-2xl' : 'shadow-lg'} ${isConnectingTarget ? 'connecting-target' : ''}`}
+                className={`absolute subassembly-node ${isLocked ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} ${
+                  isSelected ? 'ring-2 ring-blue-500 shadow-2xl' : 'shadow-lg hover:shadow-xl'
+                } ${isConnectingTarget ? 'connecting-target ring-2 ring-yellow-400' : ''} transition-all duration-200`}
                 style={{
                   left: subassembly.position.x,
                   top: subassembly.position.y,
                   width: 200,
                   height: 120,
                   zIndex: isSelected ? 10 : 1,
-                  cursor: isLocked ? 'default' : 'grab'
                 }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => setIsDragging(false)}
+                whileHover={!isLocked ? { scale: 1.02 } : {}}
+                whileTap={!isLocked ? { scale: 0.98 } : {}}
               >
-                <div className={`${backgroundClass} backdrop-blur-sm rounded-lg border ${isLocked ? '' : 'hover:shadow-xl'} transition-shadow duration-300 flex flex-col h-full p-4 ${isLocked ? 'opacity-90' : ''}`}>
+                <div className={`${backgroundClass} backdrop-blur-sm rounded-xl border-2 ${
+                  isSelected ? 'border-blue-300' : 'border-white/50'
+                } transition-all duration-300 flex flex-col h-full p-4 relative overflow-hidden`}>
+                  
+                  {/* Lock Indicator */}
+                  {isLocked && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full opacity-80 animate-pulse"></div>
+                    </div>
+                  )}
+
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm text-gray-900 leading-tight">
                         {subassembly.name}
                       </h3>
-                      <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white mt-1" style={{ backgroundColor: statusInfo.color }}>
+                      <div 
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white mt-1 shadow-sm" 
+                        style={{ backgroundColor: statusInfo.color }}
+                      >
                         {statusInfo.name}
                       </div>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0 -mr-2 -mt-2"
+                      className="h-6 w-6 p-0 -mr-2 -mt-2 hover:bg-white/50 rounded-full"
                       onClick={(e) => {
                         e.stopPropagation();
                         toast({ title: "🚧 Ši funkcija dar neįgyvendinta—bet nesijaudinkite! Galite jos paprašyti kitame pranešime! 🚀" });
@@ -99,24 +115,24 @@ import React, { useState, useMemo } from 'react';
                     </Button>
                   </div>
 
-                  <div className="text-xs text-gray-600 mb-2">
-                    Likutis: <span className="font-semibold">{subassembly.quantity} vnt.</span>
+                  <div className="text-xs text-gray-700 mb-2 font-medium">
+                    Likutis: <span className="font-bold text-gray-900">{subassembly.quantity} vnt.</span>
                   </div>
 
                   <div className="flex items-center justify-between mt-auto">
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center text-xs text-gray-500">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center text-xs text-gray-600 bg-white/50 rounded-full px-2 py-1">
                         <Package className="h-3 w-3 mr-1" />
                         {subassembly.children?.length || 0}
                       </div>
                       {subassembly.components?.length > 0 && (
-                        <div className="flex items-center text-xs text-gray-500">
+                        <div className="flex items-center text-xs text-gray-600 bg-white/50 rounded-full px-2 py-1">
                           <HardHat className="h-3 w-3 mr-1" />
                           {subassembly.components.length}
                         </div>
                       )}
                       {subassembly.comments?.length > 0 && (
-                        <div className="flex items-center text-xs text-blue-600">
+                        <div className="flex items-center text-xs text-blue-600 bg-blue-100 rounded-full px-2 py-1">
                           <MessageCircle className="h-3 w-3 mr-1" />
                           {subassembly.comments.length}
                         </div>
@@ -124,20 +140,18 @@ import React, { useState, useMemo } from 'react';
                     </div>
                     
                     {hasIssues && (
-                      <AlertCircle className="h-4 w-4 text-yellow-500" />
-                    )}
-                    {isLocked && (
-                      <div className="absolute top-1 right-1">
-                        <div className="w-3 h-3 bg-red-500 rounded-full opacity-60"></div>
-                      </div>
+                      <AlertCircle className="h-4 w-4 text-yellow-500 animate-pulse" />
                     )}
                   </div>
+
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none rounded-xl"></div>
                 </div>
               </motion.div>
             </TooltipTrigger>
             {subassembly.comments && subassembly.comments.length > 0 && (
-              <TooltipContent side="bottom" className="max-w-xs">
-                <div className="font-semibold mb-2">Komentarai:</div>
+              <TooltipContent side="bottom" className="max-w-xs bg-white/95 backdrop-blur-sm">
+                <div className="font-semibold mb-2">💬 Komentarai:</div>
                 <ul className="list-disc list-inside space-y-1">
                   {subassembly.comments.map((comment, index) => (
                     <li key={index} className="text-xs">{comment}</li>

@@ -382,29 +382,31 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
         return categories.find(c => c.id === activeCategory)?.name || activeCategory;
       }, [categories, activeCategory]);
 
-      return <div className="h-full flex">
+      return (
+        <div className="h-full flex bg-gradient-to-br from-slate-50 to-blue-50">
+          {/* Sidebar */}
           <motion.div 
-            className={`${sidebarCollapsed ? 'w-0' : 'w-80'} sidebar border-r flex flex-col z-20 bg-white transition-all duration-300 overflow-hidden`}
+            className={`${sidebarCollapsed ? 'w-0' : 'w-80'} sidebar border-r flex flex-col z-20 bg-white/90 backdrop-blur-lg transition-all duration-300 overflow-hidden shadow-xl`}
             animate={{ width: sidebarCollapsed ? 0 : 320 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="p-6 border-b">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Gamybos medis</h1>
-              <p className="text-sm text-muted-foreground mt-1">
+            <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+              <h1 className="text-2xl font-bold">🏭 Gamybos Medis</h1>
+              <p className="text-blue-100 mt-1">
                 Produktų ir subasemblių valdymas
               </p>
             </div>
 
-            <div className="p-4 border-b space-y-4">
+            <div className="p-4 border-b space-y-4 bg-white/50">
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Ieškoti subasemblių..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+                  <Input placeholder="Ieškoti subasemblių..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 bg-white/80" />
                 </div>
-                 <Button variant="outline" size="icon" onClick={() => setShowUpdateDialog(true)} title="Atnaujinti likučius iš Excel">
+                 <Button variant="outline" size="icon" onClick={() => setShowUpdateDialog(true)} title="Atnaujinti likučius iš Excel" className="bg-white/80 hover:bg-white">
                     <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => setShowStatusManager(true)} title="Valdyti būsenas">
+                <Button variant="outline" size="icon" onClick={() => setShowStatusManager(true)} title="Valdyti būsenas" className="bg-white/80 hover:bg-white">
                   <Settings className="h-4 w-4" />
                 </Button>
               </div>
@@ -425,34 +427,53 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
             </div>
 
             <Tabs value={activeCategory} onValueChange={setActiveCategory} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="flex flex-wrap gap-2 m-4 h-auto">
-                {categories.map(category => <TabsTrigger key={category.id} value={category.id} className="text-xs flex-grow">
+              <TabsList className="flex flex-wrap gap-2 m-4 h-auto bg-white/80">
+                {categories.map(category => (
+                  <TabsTrigger key={category.id} value={category.id} className="text-xs flex-grow">
                     <div className={`w-2 h-2 rounded-full ${category.color} mr-2`} />
                     {category.name}
-                  </TabsTrigger>)}
+                  </TabsTrigger>
+                ))}
               </TabsList>
                 <div className="px-4 pb-4 border-b">
-                    {showAddCategory ? <div className="space-y-2">
-                            <Input placeholder="Naujo produkto pavadinimas" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} autoFocus />
+                    {showAddCategory ? (
+                      <div className="space-y-2">
+                            <Input placeholder="Naujo produkto pavadinimas" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} autoFocus className="bg-white/80" />
                             <div className="flex gap-2">
-                                <Button onClick={handleAddNewCategory} size="sm" className="flex-1">Pridėti</Button>
-                                <Button variant="outline" size="sm" onClick={() => setShowAddCategory(false)}>Atšaukti</Button>
+                                <Button onClick={handleAddNewCategory} size="sm" className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white">Pridėti</Button>
+                                <Button variant="outline" size="sm" onClick={() => setShowAddCategory(false)} className="bg-white/80">Atšaukti</Button>
                             </div>
-                        </div> : <Button onClick={() => setShowAddCategory(true)} variant="outline" className="w-full" size="sm">
+                        </div>
+                    ) : (
+                      <Button onClick={() => setShowAddCategory(true)} variant="outline" className="w-full bg-white/80 hover:bg-white" size="sm">
                             <Plus className="h-4 w-4 mr-2" />
                             Pridėti produktą
-                        </Button>}
+                        </Button>
+                    )}
                 </div>
               <div className="flex-1 overflow-y-auto">
-                  {categories.map(category => <TabsContent key={category.id} value={category.id} className="flex-1 px-4 mt-0">
+                  {categories.map(category => (
+                    <TabsContent key={category.id} value={category.id} className="flex-1 px-4 mt-0">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between group">
-                          {editingCategoryId === category.id ? <Input type="text" value={tempCategoryName} onChange={e => setTempCategoryName(e.target.value)} onBlur={() => handleSaveCategoryName(category.id)} onKeyDown={e => {
-                      if (e.key === 'Enter') handleSaveCategoryName(category.id);
-                      if (e.key === 'Escape') setEditingCategoryId(null);
-                    }} autoFocus className="h-8 font-semibold" /> : <h3 className="font-semibold cursor-pointer" onDoubleClick={() => handleEditCategoryName(category.id)}>
+                          {editingCategoryId === category.id ? (
+                            <Input 
+                              type="text" 
+                              value={tempCategoryName} 
+                              onChange={e => setTempCategoryName(e.target.value)} 
+                              onBlur={() => handleSaveCategoryName(category.id)} 
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleSaveCategoryName(category.id);
+                                if (e.key === 'Escape') setEditingCategoryId(null);
+                              }} 
+                              autoFocus 
+                              className="h-8 font-semibold bg-white/80" 
+                            />
+                          ) : (
+                            <h3 className="font-semibold cursor-pointer" onDoubleClick={() => handleEditCategoryName(category.id)}>
                                 {category.name}
-                            </h3>}
+                            </h3>
+                          )}
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">
                                     {subassemblies[category.id]?.length || 0} vnt.
@@ -480,38 +501,55 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                         </div>
                         
                         <div className="flex gap-2">
-                            <Button onClick={() => window.location.href = '/components'} className="flex-1" size="sm">
+                            <Button onClick={() => setShowAddDialog(true)} className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white" size="sm">
                               <Plus className="h-4 w-4 mr-2" />
                               Pridėti subasemblį
                             </Button>
-                             <Button onClick={() => setShowImportDialog(true)} variant="outline" className="flex-1" size="sm">
+                             <Button onClick={() => setShowImportDialog(true)} variant="outline" className="flex-1 bg-white/80 hover:bg-white" size="sm">
                               <FileUp className="h-4 w-4 mr-2" />
                               Importuoti
                             </Button>
                         </div>
 
-
                         <div className="space-y-2">
                           {filteredSubassemblies.filter(item => item.category === category.id).map(item => {
-                      const status = getStatusById(item.status);
-                      return <motion.div key={item.id} layout className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedNode?.id === item.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`} onClick={() => handleNodeClick(item)}>
+                            const status = getStatusById(item.status);
+                            return (
+                              <motion.div 
+                                key={item.id} 
+                                layout 
+                                className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+                                  selectedNode?.id === item.id 
+                                    ? 'bg-blue-50 border-blue-200 shadow-md' 
+                                    : 'hover:bg-gray-50 bg-white/60'
+                                }`} 
+                                onClick={() => handleNodeClick(item)}
+                              >
                                 <div className="flex items-center justify-between">
                                   <span className="font-medium text-sm overflow-hidden text-ellipsis whitespace-nowrap mr-2">
                                     {item.name}
                                   </span>
-                                  <div className={`w-2.5 h-2.5 rounded-full`} style={{ backgroundColor: status.color }} />
+                                  <div className={`w-2.5 h-2.5 rounded-full shadow-sm`} style={{ backgroundColor: status.color }} />
                                 </div>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
                                   <span>Likutis: {item.quantity} vnt.</span>
-                                  <button onClick={(e) => { e.stopPropagation(); openComponentList(item); }} className="p-1 -m-1 rounded-full hover:bg-accent">
+                                  <button 
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      openComponentList(item); 
+                                    }} 
+                                    className="p-1 -m-1 rounded-full hover:bg-accent transition-colors"
+                                  >
                                     <Component className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
-                              </motion.div>;
-                    })}
+                              </motion.div>
+                            );
+                          })}
                         </div>
                       </div>
-                    </TabsContent>)}
+                    </TabsContent>
+                  ))}
               </div>
             </Tabs>
           </motion.div>
@@ -521,100 +559,192 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
             <Button
               variant="outline"
               size="icon"
-              className="absolute top-4 -right-4 z-30 bg-white shadow-lg hover:shadow-xl"
+              className="absolute top-4 -right-4 z-30 bg-white/90 backdrop-blur-sm shadow-xl hover:shadow-2xl border-2 hover:scale-110 transition-all duration-200"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             >
               {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
           </div>
 
+          {/* Main Canvas */}
           <div className="flex-1 relative">
             <Xwrapper>
-              <div ref={canvasRef} className={`w-full h-full hierarchy-canvas cursor-grab active:cursor-grabbing overflow-hidden ${connectingMode ? 'connecting-mode' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
-                <motion.div className="absolute top-0 left-0" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
+              <div 
+                ref={canvasRef} 
+                className={`w-full h-full hierarchy-canvas cursor-grab active:cursor-grabbing overflow-hidden ${connectingMode ? 'connecting-mode' : ''}`} 
+                onMouseDown={handleMouseDown} 
+                onMouseMove={handleMouseMove} 
+                onMouseUp={handleMouseUp} 
+                onMouseLeave={handleMouseUp}
+              >
+                <motion.div 
+                  className="absolute top-0 left-0" 
+                  style={{ 
+                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, 
+                    transformOrigin: '0 0' 
+                  }}
+                >
                   <AnimatePresence>
-                    {filteredSubassemblies.map(item => <SubassemblyNode key={item.id} subassembly={item} statuses={statuses} isSelected={selectedNode?.id === item.id} onClick={() => handleNodeClick(item)} onUpdate={updates => updateSubassembly(item.id, updates)} zoom={zoom} isConnectingTarget={connectingMode && connectingMode.sourceId !== item.id} isLocked={nodesLocked} />)}
+                    {filteredSubassemblies.map(item => (
+                      <SubassemblyNode 
+                        key={item.id} 
+                        subassembly={item} 
+                        statuses={statuses} 
+                        isSelected={selectedNode?.id === item.id} 
+                        onClick={() => handleNodeClick(item)} 
+                        onUpdate={updates => updateSubassembly(item.id, updates)} 
+                        zoom={zoom} 
+                        isConnectingTarget={connectingMode && connectingMode.sourceId !== item.id} 
+                        isLocked={nodesLocked} 
+                      />
+                    ))}
                   </AnimatePresence>
-                   {allSubassemblies.map(item => item.children?.map(childId => {
-                  const child = allSubassemblies.find(c => c.id === childId);
-                  if (!child || !allSubassemblies.some(f => f.id === item.id) || !allSubassemblies.some(f => f.id === child.id)) return null;
-                  return <Xarrow 
-                    key={`${item.id}-${childId}`} 
-                    start={item.id} 
-                    end={childId} 
-                    strokeWidth={Math.max(2, 3 / zoom)} 
-                    color="#3b82f6" 
-                    path="smooth" 
-                    showHead={true}
-                    headSize={Math.max(4, 6 / zoom)}
-                    startAnchor="right" 
-                    endAnchor="left" 
-                    zIndex={-1}
-                    dashness={{ strokeLen: 0, nonStrokeLen: 0 }}
-                    curveness={0.3}
-                  />;
-                }))}
+                   {allSubassemblies.map(item => 
+                     item.children?.map(childId => {
+                       const child = allSubassemblies.find(c => c.id === childId);
+                       if (!child || !allSubassemblies.some(f => f.id === item.id) || !allSubassemblies.some(f => f.id === child.id)) return null;
+                       return (
+                         <Xarrow 
+                           key={`${item.id}-${childId}`} 
+                           start={item.id} 
+                           end={childId} 
+                           strokeWidth={Math.max(3, 4 / zoom)} 
+                           color="#2563eb" 
+                           path="smooth" 
+                           showHead={true}
+                           headSize={Math.max(6, 8 / zoom)}
+                           startAnchor="right" 
+                           endAnchor="left" 
+                           zIndex={-1}
+                           dashness={{ strokeLen: 0, nonStrokeLen: 0 }}
+                           curveness={0.4}
+                           _extendSVGcanvas={50}
+                           passProps={{
+                             style: {
+                               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                             }
+                           }}
+                         />
+                       );
+                     })
+                   )}
                 </motion.div>
               </div>
             </Xwrapper>
 
+            {/* Control Buttons */}
             <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-              <Button size="sm" variant="outline" onClick={() => setZoom(prev => Math.min(3, prev * 1.2))}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setZoom(prev => Math.min(3, prev * 1.2))}
+                className="bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200"
+              >
                 <ZoomIn className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setZoom(prev => Math.max(0.2, prev * 0.8))}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setZoom(prev => Math.max(0.2, prev * 0.8))}
+                className="bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200"
+              >
                 <ZoomOut className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant="outline" onClick={resetView}>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={resetView}
+                className="bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200"
+              >
                 <RotateCcw className="h-4 w-4" />
               </Button>
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setNodesLocked(!nodesLocked)}
-                className={nodesLocked ? 'bg-red-100 text-red-600 border-red-300' : 'bg-green-100 text-green-600 border-green-300'}
+                onClick={() => {
+                  setNodesLocked(!nodesLocked);
+                  toast({ 
+                    title: nodesLocked ? "Subasembliai atrakinti" : "Subasembliai užrakinti", 
+                    description: nodesLocked ? "Dabar galite stumdyti subasemblius" : "Subasembliai užfiksuoti vietoje" 
+                  });
+                }}
+                className={`shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 ${
+                  nodesLocked 
+                    ? 'bg-red-100 text-red-600 border-red-300 hover:bg-red-200' 
+                    : 'bg-green-100 text-green-600 border-green-300 hover:bg-green-200'
+                }`}
               >
                 {nodesLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
               </Button>
             </div>
 
-            {connectingMode && <div className="absolute top-4 left-4 z-10 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg flex items-center">
-                <p className="font-medium mr-4">Pasirinkite subasemblį, prie kurio norite prijungti.</p>
+            {/* Connection Mode Indicator */}
+            {connectingMode && (
+              <div className="absolute top-4 left-4 z-10 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg flex items-center backdrop-blur-sm">
+                <p className="font-medium mr-4">🔗 Pasirinkite subasemblį, prie kurio norite prijungti.</p>
                 <Button variant="destructive" size="sm" onClick={() => setConnectingMode(null)}>Atšaukti</Button>
-              </div>}
-
-            <div className="absolute bottom-4 right-4 z-10 bg-white/50 backdrop-blur-sm rounded-lg px-3 py-1">
-              <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
-            </div>
-            
-            {nodesLocked && (
-              <div className="absolute bottom-4 left-4 z-10 bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg shadow-lg">
-                <div className="flex items-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  <span className="text-sm font-medium">Subasembliai užrakinti</span>
-                </div>
               </div>
             )}
 
+            {/* Zoom Indicator */}
+            <div className="absolute bottom-4 right-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg">
+              <span className="text-sm font-medium">🔍 {Math.round(zoom * 100)}%</span>
+            </div>
+            
+            {/* Lock Status Indicator */}
+            {nodesLocked && (
+              <div className="absolute bottom-4 left-4 z-10 bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg shadow-lg backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-sm font-medium">🔒 Subasembliai užrakinti</span>
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Modals and Dialogs */}
           <AnimatePresence>
-            {selectedNode && <SubassemblyDetails subassembly={selectedNode} statuses={statuses} onClose={() => setSelectedNode(null)} onUpdate={updates => updateSubassembly(selectedNode.id, updates)} onDelete={() => deleteSubassembly(selectedNode.id)} onConnect={() => startConnecting(selectedNode.id)} onShowComponents={() => openComponentList(selectedNode)} />}
+            {selectedNode && (
+              <SubassemblyDetails 
+                subassembly={selectedNode} 
+                statuses={statuses} 
+                onClose={() => setSelectedNode(null)} 
+                onUpdate={updates => updateSubassembly(selectedNode.id, updates)} 
+                onDelete={() => deleteSubassembly(selectedNode.id)} 
+                onConnect={() => startConnecting(selectedNode.id)} 
+                onShowComponents={() => openComponentList(selectedNode)} 
+              />
+            )}
           </AnimatePresence>
 
-          <AddSubassemblyDialog open={showAddDialog} onOpenChange={setShowAddDialog} onAdd={(data) => addSubassembly(data, activeCategory)} category={activeCategoryName} statuses={statuses} />
+          <AddSubassemblyDialog 
+            open={showAddDialog} 
+            onOpenChange={setShowAddDialog} 
+            onAdd={(data) => addSubassembly(data, activeCategory)} 
+            category={activeCategoryName} 
+            statuses={statuses} 
+          />
+          
           <ExcelImportDialog 
             open={showImportDialog} 
             onOpenChange={setShowImportDialog}
             onImportSubassemblyWithComponents={handleImportSubassemblyWithComponents}
             categoryName={activeCategoryName}
           />
+          
           <ExcelUpdateDialog
             open={showUpdateDialog}
             onOpenChange={setShowUpdateDialog}
             onImport={handleImportQuantities}
           />
-          <StatusManager open={showStatusManager} onOpenChange={setShowStatusManager} statuses={statuses} setStatuses={setStatuses} />
+          
+          <StatusManager 
+            open={showStatusManager} 
+            onOpenChange={setShowStatusManager} 
+            statuses={statuses} 
+            setStatuses={setStatuses} 
+          />
+          
           {nodeForComponents && (
               <ComponentListDialog
                 key={nodeForComponents.id}
@@ -624,6 +754,8 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                 onUpdateSubassembly={updateSubassembly}
               />
           )}
-        </div>;
+        </div>
+      );
     };
+
     export default ProductionHierarchy;
