@@ -120,20 +120,20 @@ window.fetch = function(...args) {
 				contentType.includes('application/xhtml+xml');
 
 			if (!response.ok && !isDocumentResponse) {
-					const responseClone = response.clone();
-					const errorFromRes = await responseClone.text();
-					
-					// Parse error response to check for PGRST116 (no rows found)
-					try {
-						const errorObj = JSON.parse(errorFromRes);
-						if (errorObj.code === 'PGRST116') {
-							// Suppress PGRST116 errors as they are expected when no data exists
-							return response;
-						}
-					} catch (e) {
-						// If parsing fails, continue with normal error logging
+				const responseClone = response.clone();
+				const errorFromRes = await responseClone.text();
+				
+				// Parse error response to check for PGRST116 (no rows found)
+				try {
+					const errorObj = JSON.parse(errorFromRes);
+					if (errorObj.code === 'PGRST116') {
+						// Suppress PGRST116 errors as they are expected when no data exists
+						return response;
 					}
-					
+				} catch (e) {
+					// If parsing fails, continue with normal error logging
+				}
+				
 				// Only log non-PGRST116 errors
 				const requestUrl = response.url;
 				console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
