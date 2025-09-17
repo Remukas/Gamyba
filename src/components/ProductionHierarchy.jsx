@@ -61,6 +61,7 @@ const ProductionHierarchy = () => {
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [showExcelUpdate, setShowExcelUpdate] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   
   // Connection state
   const [isConnecting, setIsConnecting] = useState(false);
@@ -114,6 +115,10 @@ const ProductionHierarchy = () => {
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const toggleLock = useCallback(() => {
+    setIsLocked(prev => !prev);
   }, []);
 
   const handleZoomIn = useCallback(() => {
@@ -349,6 +354,24 @@ const ProductionHierarchy = () => {
     });
   }, [subassemblies, setSubassemblies, toast]);
 
+  const handleAIQuery = (query) => {
+    const lowerInput = query.toLowerCase();
+
+    // Atsargų analizė
+    if (lowerInput.includes('atsargos') || lowerInput.includes('likučiai') || lowerInput.includes('kiek turiu')) {
+      const lowStockComponents = componentsInventory.filter(c => c.quantity < 10);
+      
+      return {
+        sender: 'ai',
+        text: lowStockComponents.length > 0 
+          ? `Radau ${lowStockComponents.length} komponentų su mažais likučiais:`
+          : 'Visi komponentai turi pakankamus likučius!',
+        inventoryAnalysis: { lowStockComponents }
+      };
+    }
+
+    // Komponentų sudėties analizė
+    if (lowerInput.includes('kas įeina') || lowerInput.includes('sudėtis')) {
       const targetName = lowerInput.replace(/kas įeina į|sudėtis/g, '').trim();
       const targetNode = Object.values(subassemblies).flat().find(sa => 
         sa.name.toLowerCase().includes(targetName)
