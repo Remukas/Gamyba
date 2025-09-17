@@ -279,6 +279,51 @@ const MaintenanceSchedule = () => {
           </motion.div>
         </div>
 
+        {/* Tutorial Dialog */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-semibold mb-4">🔧 Priežiūros Grafiko Instrukcijos</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-blue-600">Kaip Suplanuoti Priežiūrą:</h4>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Įveskite įrangos pavadinimą</li>
+                    <li>Pasirinkite užduoties tipą</li>
+                    <li>Nustatykite prioritetą</li>
+                    <li>Paskirkite atsakingą techniką</li>
+                    <li>Nurodykite datą ir laiką</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-600">Prioritetų Sistema:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li><span className="text-red-600">Kritinis</span> - skubus gedimo šalinimas</li>
+                    <li><span className="text-orange-600">Aukštas</span> - svarbi prevencinė priežiūra</li>
+                    <li><span className="text-yellow-600">Vidutinis</span> - planuojama priežiūra</li>
+                    <li><span className="text-green-600">Žemas</span> - rutininis valymas</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-600">Statusų Valdymas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Suplanuota - užduotis sukurta</li>
+                    <li>Vykdoma - technikas dirba</li>
+                    <li>Užbaigta - darbas baigtas</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setShowTutorial(false)}>Supratau</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Add New Maintenance Task */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}>

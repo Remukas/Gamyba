@@ -30,6 +30,19 @@ const Analytics = () => {
     const totalInventoryValue = componentsInventory.reduce((sum, c) => sum + (c.stock * 10), 0);
     const averageLeadTime = componentsInventory.reduce((sum, c) => sum + c.leadTimeDays, 0) / totalComponents || 0;
     
+    // Basic OEE calculation (simplified)
+    const plannedProductionTime = 8 * 60; // 8 hours in minutes
+    const actualProductionTime = plannedProductionTime * 0.85; // 85% availability
+    const idealCycleTime = 10; // minutes per unit
+    const actualCycleTime = 12; // minutes per unit
+    const goodUnits = completedSubassemblies;
+    const totalUnits = totalSubassemblies;
+    
+    const availability = (actualProductionTime / plannedProductionTime) * 100;
+    const performance = totalUnits > 0 ? (idealCycleTime / actualCycleTime) * 100 : 0;
+    const quality = totalUnits > 0 ? (goodUnits / totalUnits) * 100 : 0;
+    const oee = (availability * performance * quality) / 10000;
+    
     return {
       totalComponents,
       lowStockComponents,
@@ -37,7 +50,11 @@ const Analytics = () => {
       completedSubassemblies,
       totalInventoryValue,
       averageLeadTime: Math.round(averageLeadTime),
-      completionRate: totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0
+      completionRate: totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0,
+      oee: Math.round(oee),
+      availability: Math.round(availability),
+      performance: Math.round(performance),
+      qualityRate: Math.round(quality)
     };
   }, [componentsInventory, subassemblies]);
 
@@ -204,45 +221,6 @@ const Analytics = () => {
             </Card>
           </motion.div>
         </div>
-
-        {/* Tutorial Dialog */}
-        {showTutorial && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-            >
-              <h3 className="text-xl font-semibold mb-4">📊 Analitikos Instrukcijos</h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <h4 className="font-semibold text-blue-600">Pagrindiniai Rodikliai:</h4>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Viso Komponentų - bendras komponentų skaičius sistemoje</li>
-                    <li>Mažos Atsargos - komponentai su mažiau nei 10 vnt.</li>
-                    <li>Užbaigimo Tempas - procentas užbaigtų subasemblių</li>
-                    <li>Atsargų Vertė - apytikslė atsargų vertė (10€/vnt.)</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-green-600">Gamybos Efektyvumas:</h4>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Subasemblių skaičius - kiek elementų gamyboje</li>
-                    <li>Užbaigta - kiek subasemblių baigta gaminti</li>
-                    <li>Vidutinis gavimo laikas - komponentų pristatymo laikas</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-red-600">Kritiniai Komponentai:</h4>
-                  <p>Komponentai su mažomis atsargomis, kuriems reikia skubaus papildymo.</p>
-                </div>
-              </div>
-              <div className="flex justify-end mt-6">
-                <Button onClick={() => setShowTutorial(false)}>Supratau</Button>
-              </div>
-            </motion.div>
-          </div>
-        )}
 
         {/* Critical Components */}
         <motion.div 
