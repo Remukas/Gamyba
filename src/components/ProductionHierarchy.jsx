@@ -677,10 +677,10 @@ const ProductionHierarchy = () => {
       {/* Main Canvas Area */}
       <div className="flex-1 relative">
         {/* VIRŠUTINIAI MYGTUKAI - UŽRAKINTI IR PAGALBA */}
-        <div className="absolute top-4 right-4 z-50 flex flex-col gap-3">
+        <div className="absolute top-6 right-6 z-50 flex flex-col gap-4">
           <Button
             onClick={toggleLock}
-            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-6 py-3 h-auto w-48 text-sm font-medium`}
+            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-xl px-8 py-4 h-auto min-w-[200px] text-base font-semibold rounded-xl border-2 border-white`}
           >
             {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
             {isLocked ? 'Užrakinta' : 'Atrakinta'}
@@ -689,7 +689,7 @@ const ProductionHierarchy = () => {
           <Button
             onClick={() => setShowTutorial(true)}
             variant="outline"
-            className="bg-white/90 backdrop-blur-sm hover:bg-white px-6 py-3 h-auto w-48 text-sm font-medium border-2"
+            className="bg-white/95 backdrop-blur-sm hover:bg-white px-8 py-4 h-auto min-w-[200px] text-base font-semibold border-2 rounded-xl shadow-xl"
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
