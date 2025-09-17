@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useComponents } from '@/context/ComponentsContext';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -41,15 +42,24 @@ const InventoryCycles = () => {
   const [inspector, setInspector] = useState('');
   const [notes, setNotes] = useState('');
 
+  const getCurrentWeek = useCallback(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now - start;
+    const oneWeek = 1000 * 60 * 60 * 24 * 7;
+    return Math.ceil(diff / oneWeek);
+  }, []);
+
   // Generate weeks for current year
   const weeks = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const weeks = [];
+    const currentWeek = getCurrentWeek();
     
     for (let week = 1; week <= 52; week++) {
       const weekStr = `W${week.toString().padStart(2, '0')}`;
       const isCompleted = inventoryRecords.some(record => record.week_number === weekStr);
-      const isOverdue = week < getCurrentWeek() && !isCompleted;
+      const isOverdue = week < currentWeek && !isCompleted;
       
       weeks.push({
         week: weekStr,
@@ -61,25 +71,17 @@ const InventoryCycles = () => {
     }
     
     return weeks;
-  }, [inventoryRecords]);
+  }, [inventoryRecords, getCurrentWeek]);
 
-  const getCurrentWeek = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    const diff = now - start;
-    const oneWeek = 1000 * 60 * 60 * 24 * 7;
-    return Math.ceil(diff / oneWeek);
-  };
-
-  const handleWeekClick = (week) => {
+  const handleWeekClick = useCallback((week) => {
     setSelectedWeek(week);
     setShowWeekDialog(true);
     setUploadedFile(null);
     setInspector('');
     setNotes('');
-  };
+  }, []);
 
-  const downloadExcelTemplate = () => {
+  const downloadExcelTemplate = useCallback(() => {
     if (!selectedWeek) return;
 
     // Sukurti Excel failą su komponentų sąrašu
@@ -113,9 +115,9 @@ const InventoryCycles = () => {
       title: "Excel failas atsisiųstas!",
       description: `Inventorizacijos šablonas ${selectedWeek.week} savaitei paruoštas.`
     });
-  };
+  }, [selectedWeek, componentsInventory, toast]);
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = useCallback((event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -153,9 +155,9 @@ const InventoryCycles = () => {
       }
     };
     reader.readAsArrayBuffer(file);
-  };
+  }, [toast]);
 
-  const completeInventory = async () => {
+  const completeInventory = useCallback(async () => {
     if (!uploadedFile || !inspector.trim()) {
       toast({
         title: "Klaida",
@@ -208,7 +210,7 @@ const InventoryCycles = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [uploadedFile, inspector, selectedWeek, componentsInventory, updateComponent, toast]);
 
   const stats = useMemo(() => {
     const completedWeeks = weeks.filter(w => w.isCompleted).length;
@@ -260,7 +262,7 @@ const InventoryCycles = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
@@ -304,20 +306,6 @@ const InventoryCycles = () => {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm">Problemų Komponentai</p>
-                    <p className="text-3xl font-bold">{stats.componentsWithIssues}</p>
-                  </div>
-                  <AlertTriangle className="h-8 w-8 text-purple-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
             <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -333,7 +321,7 @@ const InventoryCycles = () => {
         </div>
 
         {/* Weekly Calendar */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -370,7 +358,7 @@ const InventoryCycles = () => {
         </motion.div>
 
         {/* Recent Records */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mt-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -501,11 +489,12 @@ const InventoryCycles = () => {
                   
                   <div>
                     <Label htmlFor="notes">Bendros pastabos</Label>
-                    <Input
+                    <Textarea
                       id="notes"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Papildomos pastabos apie inventorizaciją..."
+                      rows={3}
                     />
                   </div>
                 </div>
