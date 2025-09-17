@@ -68,9 +68,9 @@ const Analytics = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              📊 Analitika
+              📊 Analitika ir Ataskaitos
             </h1>
-            <p className="text-gray-600 text-lg">Pagrindiniai gamybos rodikliai</p>
+            <p className="text-gray-600 text-lg">Gamybos efektyvumo ir veiklos rodiklių analizė</p>
           </div>
           <div className="flex gap-3 mt-4 md:mt-0">
             <Button
@@ -79,7 +79,7 @@ const Analytics = () => {
               className="bg-white/80 backdrop-blur-sm hover:bg-white"
             >
               <HelpCircle className="h-4 w-4 mr-2" />
-              Instrukcijos
+              Pagalba
             </Button>
             <Button
               onClick={exportData}
