@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase, inventoryCyclesAPI } from '@/lib/supabase';
+import { supabase, inventoryCyclesAPI } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,92 @@ const InventoryCycles = () => {
   const { toast } = useToast();
   const [showTutorial, setShowTutorial] = useState(false);
   
+  // Supabase duomenų būsenos
+  const [cycleSettings, setCycleSettings] = useState({
+    defaultCycleMonths: 3,
+    startDate: new Date().toISOString().split('T')[0],
+    criticalComponents: [],
+    customCycles: {}
+  });
+  
+  const [inventoryRecords, setInventoryRecords] = useState([]);
+  const [componentOverrides, setComponentOverrides] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Naujo įrašo forma
+  const [newRecord, setNewRecord] = useState({
+    componentId: '',
+    actualStock: '',
+    notes: '',
+    inspector: 'Dabartinis vartotojas'
+  });
+
+  // Užkrauti duomenis iš Supabase
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Užkrauti nustatymus
+      const settings = await inventoryCyclesAPI.getSettings();
+      setCycleSettings({
+        defaultCycleMonths: settings.default_cycle_months || 3,
+        startDate: settings.start_date || new Date().toISOString().split('T')[0],
+        criticalComponents: [],
+        customCycles: {}
+      });
+      
+      // Užkrauti įrašus
+      const records = await inventoryCyclesAPI.getRecords();
+      const formattedRecords = records.map(record => ({
+        id: record.id,
+        componentId: record.component_id,
+        date: record.check_date,
+        expectedStock: record.expected_stock,
+        actualStock: record.actual_stock,
+        difference: record.difference,
+        notes: record.notes,
+        inspector: record.inspector,
+        week: record.week_number
+      }));
+      setInventoryRecords(formattedRecords);
+      
+      // Užkrauti komponentų perrašymus
+      const overrides = await inventoryCyclesAPI.getComponentOverrides();
+      setComponentOverrides(overrides);
+      
+      // Atnaujinti nustatymus su perrašymais
+      const customCycles = {};
+      const criticalComponents = [];
+      
+      overrides.forEach(override => {
+        customCycles[override.component_id] = override.cycle_months;
+        if (override.is_critical) {
+          criticalComponents.push(override.component_id);
+        }
+      });
+      
+      setCycleSettings(prev => ({
+        ...prev,
+        customCycles,
+        criticalComponents
+      }));
+      
+    } catch (error) {
+      console.error('Klaida kraunant duomenis:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko užkrauti duomenų iš duomenų bazės.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Supabase duomenų būsenos
   const [cycleSettings, setCycleSettings] = useState({
     defaultCycleMonths: 3,
@@ -260,6 +347,103 @@ const InventoryCycles = () => {
     };
   }, [inventoryRecords, componentsInventory]);
 
+  // Analitikos skaičiavimai
+  const analytics = useMemo(() => {
+    const totalRecords = inventoryRecords.length;
+    const accurateRecords = inventoryRecords.filter(r => r.difference === 0).length;
+    const discrepancies = inventoryRecords.filter(r => r.difference !== 0).length;
+    const shortages = inventoryRecords.filter(r => r.difference < 0).length;
+    const surpluses = inventoryRecords.filter(r => r.difference > 0).length;
+    
+    const accuracyRate = totalRecords > 0 ? Math.round((accurateRecords / totalRecords) * 100) : 0;
+    
+    // Probleminiai komponentai
+    const componentIssues = {};
+    inventoryRecords.forEach(record => {
+      if (record.difference !== 0) {
+        if (!componentIssues[record.componentId]) {
+          componentIssues[record.componentId] = {
+            componentId: record.componentId,
+            totalChecks: 0,
+            discrepancies: 0,
+            totalDifference: 0,
+            lastCheck: record.date
+          };
+        }
+        componentIssues[record.componentId].discrepancies++;
+        componentIssues[record.componentId].totalDifference += Math.abs(record.difference);
+      }
+    });
+
+    // Visų komponentų statistika
+    inventoryRecords.forEach(record => {
+      if (!componentIssues[record.componentId]) {
+        componentIssues[record.componentId] = {
+          componentId: record.componentId,
+          totalChecks: 0,
+          discrepancies: 0,
+          totalDifference: 0,
+          lastCheck: record.date
+        };
+      }
+      componentIssues[record.componentId].totalChecks++;
+    });
+
+    const topProblematicComponents = Object.values(componentIssues)
+      .map(issue => {
+        const component = componentsInventory.find(c => c.id === issue.componentId);
+        const errorRate = issue.totalChecks > 0 ? Math.round((issue.discrepancies / issue.totalChecks) * 100) : 0;
+        
+        return {
+          ...issue,
+          componentName: component?.name || 'Nežinomas komponentas',
+          errorRate,
+          avgDifference: issue.discrepancies > 0 ? Math.round(issue.totalDifference / issue.discrepancies) : 0
+        };
+      })
+      .sort((a, b) => b.errorRate - a.errorRate)
+      .slice(0, 10);
+
+    // Mėnesinės tendencijos
+    const monthlyTrends = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      const monthRecords = inventoryRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === date.getFullYear() && 
+               recordDate.getMonth() === date.getMonth();
+      });
+      
+      const monthAccurate = monthRecords.filter(r => r.difference === 0).length;
+      const monthTotal = monthRecords.length;
+      const monthAccuracy = monthTotal > 0 ? Math.round((monthAccurate / monthTotal) * 100) : 0;
+      const monthShortages = monthRecords.filter(r => r.difference < 0).length;
+      const monthSurpluses = monthRecords.filter(r => r.difference > 0).length;
+      
+      monthlyTrends.push({
+        month: date.toLocaleDateString('lt-LT', { month: 'short', year: 'numeric' }),
+        accuracy: monthAccuracy,
+        total: monthTotal,
+        shortages: monthShortages,
+        surpluses: monthSurpluses
+      });
+    }
+    
+    return {
+      totalRecords,
+      accurateRecords,
+      discrepancies,
+      shortages,
+      surpluses,
+      accuracyRate,
+      topProblematicComponents,
+      monthlyTrends
+    };
+  }, [inventoryRecords, componentsInventory]);
+
   // Statistikos
   const cycleStats = useMemo(() => {
     const totalComponents = componentsInventory.length;
@@ -288,6 +472,123 @@ const InventoryCycles = () => {
       averagePerWeek: Math.round(totalComponents / 52 * cycleSettings.defaultCycleMonths)
     };
   }, [componentsInventory, cycleSettings, inventoryRecords, yearlySchedule]);
+
+  // Pridėti inventorizacijos įrašą
+  const handleAddRecord = async () => {
+    if (!newRecord.componentId || newRecord.actualStock === '') {
+      toast({
+        title: "Klaida",
+        description: "Pasirinkite komponentą ir įveskite tikrą likutį.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const component = componentsInventory.find(c => c.id === newRecord.componentId);
+    if (!component) return;
+
+    const actualStock = parseInt(newRecord.actualStock) || 0;
+    const expectedStock = component.stock;
+    const difference = actualStock - expectedStock;
+
+    try {
+      const recordData = {
+        componentId: newRecord.componentId,
+        date: new Date().toISOString().split('T')[0],
+        expectedStock,
+        actualStock,
+        notes: newRecord.notes,
+        inspector: newRecord.inspector
+      };
+
+      await inventoryCyclesAPI.addRecord(recordData);
+      
+      // Atnaujinti lokalų sąrašą
+      const newLocalRecord = {
+        id: Date.now(),
+        ...recordData,
+        difference,
+        week: `W${Math.ceil((new Date().getDate() + new Date().getDay()) / 7).toString().padStart(2, '0')}`
+      };
+      
+      setInventoryRecords(prev => [newLocalRecord, ...prev]);
+      setNewRecord({
+        componentId: '',
+        actualStock: '',
+        notes: '',
+        inspector: 'Dabartinis vartotojas'
+      });
+
+      toast({
+        title: "Inventorizacija užregistruota!",
+        description: `${component.name}: ${difference === 0 ? 'tikslus skaičius' : difference > 0 ? `+${difference} perteklius` : `${difference} trūkumas`}`
+      });
+    } catch (error) {
+      console.error('Klaida išsaugant įrašą:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko išsaugoti inventorizacijos įrašo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Atnaujinti komponento ciklą
+  const updateComponentCycle = async (componentId, months) => {
+    try {
+      await inventoryCyclesAPI.saveComponentCycle(componentId, months);
+      
+      setCycleSettings(prev => ({
+        ...prev,
+        customCycles: {
+          ...prev.customCycles,
+          [componentId]: months
+        }
+      }));
+      
+      toast({
+        title: "Ciklas atnaujintas!",
+        description: `Komponento inventorizacijos ciklas pakeistas į ${months} mėn.`
+      });
+    } catch (error) {
+      console.error('Klaida atnaujinant ciklą:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti komponento ciklo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Pažymėti komponentą kaip kritinį
+  const toggleCriticalComponent = async (componentId) => {
+    const isCritical = cycleSettings.criticalComponents.includes(componentId);
+    const newCriticalStatus = !isCritical;
+    
+    try {
+      const currentCycle = cycleSettings.customCycles[componentId] || cycleSettings.defaultCycleMonths;
+      await inventoryCyclesAPI.saveComponentCycle(componentId, currentCycle, newCriticalStatus);
+      
+      setCycleSettings(prev => ({
+        ...prev,
+        criticalComponents: newCriticalStatus
+          ? [...prev.criticalComponents, componentId]
+          : prev.criticalComponents.filter(id => id !== componentId)
+      }));
+      
+      toast({
+        title: newCriticalStatus ? "Komponentas pažymėtas kaip kritinis!" : "Komponentas nebėra kritinis",
+        description: `Komponento statusas pakeistas.`
+      });
+    } catch (error) {
+      console.error('Klaida keičiant kritinį statusą:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pakeisti komponento statuso.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Pridėti inventorizacijos įrašą
   const handleAddRecord = () => {
@@ -328,30 +629,9 @@ const InventoryCycles = () => {
     });
 
     toast({
-      title: "Inventorizacija užregistruota!",
-      description: `${component.name}: ${difference === 0 ? 'tikslus skaičius' : difference > 0 ? `+${difference} perteklius` : `${difference} trūkumas`}`
+      title: "Inventorizacija registruota!",
+      description: `${component.name}: ${difference === 0 ? 'Tikslus' : difference > 0 ? `+${difference}` : difference} vnt.`
     });
-  };
-
-  // Atnaujinti komponento ciklą
-  const updateComponentCycle = (componentId, months) => {
-    setCycleSettings(prev => ({
-      ...prev,
-      customCycles: {
-        ...prev.customCycles,
-        [componentId]: months
-      }
-    }));
-  };
-
-  // Pažymėti komponentą kaip kritinį
-  const toggleCriticalComponent = (componentId) => {
-    setCycleSettings(prev => ({
-      ...prev,
-      criticalComponents: prev.criticalComponents.includes(componentId)
-        ? prev.criticalComponents.filter(id => id !== componentId)
-        : [...prev.criticalComponents, componentId]
-    }));
   };
 
   // Eksportuoti duomenis
@@ -390,6 +670,45 @@ const InventoryCycles = () => {
     if (errorRate === 0) return <CheckCircle className="h-4 w-4 text-green-500" />;
     if (errorRate <= 20) return <TrendingUp className="h-4 w-4 text-yellow-500" />;
     return <TrendingDown className="h-4 w-4 text-red-500" />;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Kraunami duomenys iš duomenų bazės...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Gauti tendencijos ikoną
+  const getTrendIcon = (errorRate) => {
+    if (errorRate === 0) return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (errorRate <= 20) return <TrendingUp className="h-4 w-4 text-yellow-500" />;
+    return <TrendingDown className="h-4 w-4 text-red-500" />;
+  };
+
+  // Atnaujinti komponento ciklą
+  const updateComponentCycle = (componentId, cycleMonths) => {
+    setCycleSettings(prev => ({
+      ...prev,
+      customCycles: {
+        ...prev.customCycles,
+        [componentId]: cycleMonths
+      }
+    }));
+  };
+
+  // Perjungti kritinio komponento statusą
+  const toggleCriticalComponent = (componentId) => {
+    setCycleSettings(prev => ({
+      ...prev,
+      criticalComponents: prev.criticalComponents.includes(componentId)
+        ? prev.criticalComponents.filter(id => id !== componentId)
+        : [...prev.criticalComponents, componentId]
+    }));
   };
 
   return (
@@ -709,17 +1028,8 @@ const InventoryCycles = () => {
                   </div>
 
                   <Button onClick={handleAddRecord} className="w-full bg-gradient-to-r from-green-600 to-green-700">
-                    {isLoading ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Išsaugoma...
-                      </div>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Registruoti Inventorizaciją
-                      </>
-                    )}
+                    <Plus className="h-4 w-4 mr-2" />
+                    Registruoti Inventorizaciją
                   </Button>
                 </CardContent>
               </Card>
