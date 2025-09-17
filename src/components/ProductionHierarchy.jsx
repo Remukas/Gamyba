@@ -450,7 +450,7 @@ const ProductionHierarchy = () => {
         <div className="absolute top-4 right-4 z-40 flex gap-2">
           <Button
             onClick={toggleLock}
-            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg`}
+            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-4 py-2 h-auto min-w-[120px]`}
           >
             {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
             {isLocked ? 'Užrakinta' : 'Atrakinta'}
@@ -459,7 +459,7 @@ const ProductionHierarchy = () => {
           <Button
             onClick={() => setShowTutorial(true)}
             variant="outline"
-            className="bg-white/80 backdrop-blur-sm hover:bg-white"
+            className="bg-white/80 backdrop-blur-sm hover:bg-white px-4 py-2 h-auto min-w-[100px]"
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
@@ -467,7 +467,7 @@ const ProductionHierarchy = () => {
 
           <Button
             onClick={() => setShowAIAssistant(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-4 py-2 h-auto min-w-[140px]"
           >
             <Bot className="h-4 w-4 mr-2" />
             AI Asistentas
@@ -517,8 +517,8 @@ const ProductionHierarchy = () => {
           <div className="fixed bottom-4 left-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
             🔒 Subasembliai užrakinti
           </div>
-        )}
-
+          isSidebarCollapsed ? 'left-4' : 'left-[316px]'
+        } bottom-32`}
         {/* Canvas */}
         <div 
           ref={canvasRef}
