@@ -12,14 +12,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { 
   Calendar, 
   Download, 
-  Upload, 
   CheckCircle, 
   Clock, 
   AlertTriangle,
   Package,
-  FileSpreadsheet,
-  User,
-  Settings,
   RefreshCw,
   HelpCircle
 } from 'lucide-react';
@@ -48,6 +44,7 @@ const InventoryCycles = () => {
     const diff = now - start;
     const oneWeek = 1000 * 60 * 60 * 24 * 7;
     return Math.ceil(diff / oneWeek);
+  };
 
   // Generate weeks for current year
   const weeks = useMemo(() => {
@@ -70,7 +67,7 @@ const InventoryCycles = () => {
     }
     
     return weeks;
-  }, [inventoryRecords, getCurrentWeek]);
+  }, [inventoryRecords]);
 
   const handleWeekClick = (week) => {
     setSelectedWeek(week);
@@ -78,6 +75,7 @@ const InventoryCycles = () => {
     setUploadedFile(null);
     setInspector('');
     setNotes('');
+  };
 
   const downloadExcelTemplate = () => {
     if (!selectedWeek) return;
@@ -113,6 +111,7 @@ const InventoryCycles = () => {
       title: "Excel failas atsisiųstas!",
       description: `Inventorizacijos šablonas ${selectedWeek.week} savaitei paruoštas.`
     });
+  };
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -152,8 +151,9 @@ const InventoryCycles = () => {
       }
     };
     reader.readAsArrayBuffer(file);
+  };
 
-  const completeInventory = async () => {
+  const completeInventory = () => {
     if (!uploadedFile || !inspector.trim()) {
       toast({
         title: "Klaida",
@@ -206,6 +206,7 @@ const InventoryCycles = () => {
         variant: "destructive"
       });
     }
+  };
 
   const stats = useMemo(() => {
     const completedWeeks = weeks.filter(w => w.isCompleted).length;
@@ -245,13 +246,6 @@ const InventoryCycles = () => {
             >
               <HelpCircle className="h-4 w-4 mr-2" />
               Pagalba
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-white/80 backdrop-blur-sm hover:bg-white"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Nustatymai
             </Button>
           </div>
         </div>
