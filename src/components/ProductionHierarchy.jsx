@@ -422,11 +422,11 @@ const ProductionHierarchy = () => {
                 <Button size="sm" onClick={() => setShowAddDialog(true)}>
                   Pridėti subasemblį
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowExcelImport(true)} className="whitespace-nowrap min-w-[100px]">
+                <Button size="sm" variant="outline" onClick={() => setShowExcelImport(true)} className="whitespace-nowrap min-w-[120px] px-3">
                   Importuoti
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowExcelUpdate(true)} className="whitespace-nowrap min-w-[100px]">
-                  Atnaujinti
+                <Button size="sm" variant="outline" onClick={() => setShowExcelUpdate(true)} className="whitespace-nowrap min-w-[140px] px-3">
+                  Atnaujinti likučius
                 </Button>
               </div>
             </div>
@@ -437,12 +437,12 @@ const ProductionHierarchy = () => {
       {/* Sidebar Toggle Button - Always Visible */}
       <Button
         onClick={toggleSidebar}
-        className={`fixed bottom-4 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-12 h-12 p-0 transition-all duration-300 flex items-center justify-center ${
+        className={`fixed bottom-8 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-14 h-14 p-0 transition-all duration-300 flex items-center justify-center ${
           isSidebarCollapsed ? 'left-0' : 'left-80'
         }`}
         size="sm"
       >
-        {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+        {isSidebarCollapsed ? <ChevronRight className="h-6 w-6" /> : <ChevronLeft className="h-6 w-6" />}
       </Button>
 
       {/* Main Canvas Area */}
@@ -451,7 +451,7 @@ const ProductionHierarchy = () => {
         <div className="absolute top-4 right-4 z-40 flex gap-2">
           <Button
             onClick={toggleLock}
-            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-8 py-3 h-auto min-w-[160px] whitespace-nowrap text-sm font-medium`}
+            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-8 py-4 h-auto min-w-[180px] whitespace-nowrap text-base font-medium`}
           >
             {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
             {isLocked ? 'Užrakinta' : 'Atrakinta'}
@@ -460,7 +460,7 @@ const ProductionHierarchy = () => {
           <Button
             onClick={() => setShowTutorial(true)}
             variant="outline"
-            className="bg-white/80 backdrop-blur-sm hover:bg-white px-8 py-3 h-auto min-w-[140px] whitespace-nowrap text-sm font-medium"
+            className="bg-white/80 backdrop-blur-sm hover:bg-white px-8 py-4 h-auto min-w-[140px] whitespace-nowrap text-base font-medium"
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
@@ -468,7 +468,7 @@ const ProductionHierarchy = () => {
 
           <Button
             onClick={() => setShowAIAssistant(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-8 py-3 h-auto min-w-[180px] whitespace-nowrap text-sm font-medium"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-8 py-4 h-auto min-w-[200px] whitespace-nowrap text-base font-medium"
           >
             <Bot className="h-4 w-4 mr-2" />
             AI Asistentas
