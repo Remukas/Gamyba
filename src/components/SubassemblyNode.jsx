@@ -16,7 +16,6 @@ import React, { useState, useMemo } from 'react';
 
       const handleMouseDown = (e) => {
         if (isLocked) return;
-        if (isLocked) return;
         e.stopPropagation();
         setIsDragging(true);
         setDragStart({
@@ -79,18 +78,12 @@ import React, { useState, useMemo } from 'react';
                 onMouseLeave={() => setIsDragging(false)}
                 whileHover={!isLocked ? { scale: 1.02 } : {}}
                 whileTap={!isLocked ? { scale: 0.98 } : {}}
+                data-locked={isLocked}
               >
                 <div className={`${backgroundClass} backdrop-blur-sm rounded-xl border-2 ${
                   isSelected ? 'border-blue-300' : 'border-white/50'
                 } transition-all duration-300 flex flex-col h-full p-4 relative overflow-hidden`}>
                   
-                  {/* Lock Indicator */}
-                  {isLocked && (
-                    <div className="absolute top-2 right-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full opacity-80 animate-pulse"></div>
-                    </div>
-                  )}
-
                   {/* Lock Indicator */}
                   {isLocked && (
                     <div className="absolute top-2 right-2">

@@ -75,6 +75,8 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
       const [filterHasComments, setFilterHasComments] = useState(false);
       const [showComponentListDialog, setShowComponentListDialog] = useState(false);
       const [nodeForComponents, setNodeForComponents] = useState(null);
+      
+      // NAUJOS FUNKCIJOS
       const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
       const [nodesLocked, setNodesLocked] = useState(false);
 
@@ -554,7 +556,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
             </Tabs>
           </motion.div>
 
-          {/* Sidebar Toggle Button */}
+          {/* NAUJAS SIDEBAR TOGGLE MYGTUKAS */}
           <div className="relative">
             <Button
               variant="outline"
@@ -595,10 +597,11 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                         onUpdate={updates => updateSubassembly(item.id, updates)} 
                         zoom={zoom} 
                         isConnectingTarget={connectingMode && connectingMode.sourceId !== item.id} 
-                        isLocked={nodesLocked} 
+                        isLocked={nodesLocked}
                       />
                     ))}
                   </AnimatePresence>
+                   {/* PAGERINTI RYŠIAI */}
                    {allSubassemblies.map(item => 
                      item.children?.map(childId => {
                        const child = allSubassemblies.find(c => c.id === childId);
@@ -608,11 +611,11 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                            key={`${item.id}-${childId}`} 
                            start={item.id} 
                            end={childId} 
-                           strokeWidth={Math.max(3, 4 / zoom)} 
+                           strokeWidth={Math.max(4, 5 / zoom)} 
                            color="#2563eb" 
                            path="smooth" 
                            showHead={true}
-                           headSize={Math.max(6, 8 / zoom)}
+                           headSize={Math.max(8, 10 / zoom)}
                            startAnchor="right" 
                            endAnchor="left" 
                            zIndex={-1}
@@ -621,7 +624,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                            _extendSVGcanvas={50}
                            passProps={{
                              style: {
-                               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                               filter: 'drop-shadow(0 4px 8px rgba(37, 99, 235, 0.3))'
                              }
                            }}
                          />
@@ -658,6 +661,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>
+              {/* NAUJAS UŽRAKINIMO MYGTUKAS */}
               <Button 
                 size="sm" 
                 variant="outline" 
@@ -691,7 +695,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
               <span className="text-sm font-medium">🔍 {Math.round(zoom * 100)}%</span>
             </div>
             
-            {/* Lock Status Indicator */}
+            {/* NAUJAS LOCK STATUS INDICATOR */}
             {nodesLocked && (
               <div className="absolute bottom-4 left-4 z-10 bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg shadow-lg backdrop-blur-sm">
                 <div className="flex items-center gap-2">
