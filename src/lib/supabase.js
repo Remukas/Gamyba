@@ -264,32 +264,56 @@ export const inventoryCyclesAPI = {
     const { data, error } = await supabase
       .from('inventory_cycle_settings')
       .select('*')
-      .single();
+      .limit(1);
     
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    if (error) {
+      console.warn('Settings not found, using defaults');
     }
     
-    return data || {
+    const settings = data && data.length > 0 ? data[0] : null;
+    
+    return settings || {
       default_cycle_months: 3,
       start_date: new Date().toISOString().split('T')[0]
     };
   },
 
   async saveSettings(settings) {
-    const { data, error } = await supabase
+    // Pirmiausia pabandyti gauti esamą įrašą
+    const { data: existing } = await supabase
       .from('inventory_cycle_settings')
-      .upsert({
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        default_cycle_months: settings.defaultCycleMonths,
-        start_date: settings.startDate,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      .select('*')
+      .limit(1);
     
-    if (error) throw error;
-    return data;
+    const settingsData = {
+      user_id: (await supabase.auth.getUser()).data.user?.id,
+      default_cycle_months: settings.defaultCycleMonths,
+      start_date: settings.startDate,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (existing && existing.length > 0) {
+      // Atnaujinti esamą
+      const { data, error } = await supabase
+        .from('inventory_cycle_settings')
+        .update(settingsData)
+        .eq('id', existing[0].id)
+        .select()
+        .limit(1);
+      
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    } else {
+      // Sukurti naują
+      const { data, error } = await supabase
+        .from('inventory_cycle_settings')
+        .insert(settingsData)
+        .select()
+        .limit(1);
+      
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    }
   },
 
   async getRecords() {
@@ -331,20 +355,43 @@ export const inventoryCyclesAPI = {
   },
 
   async saveComponentCycle(componentId, cycleMonths, isCritical = false) {
-    const { data, error } = await supabase
+    // Pirmiausia pabandyti gauti esamą įrašą
+    const { data: existing } = await supabase
       .from('component_cycle_overrides')
-      .upsert({
-        component_id: componentId,
-        cycle_months: cycleMonths,
-        is_critical: isCritical,
-        user_id: (await supabase.auth.getUser()).data.user?.id,
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      .select('*')
+      .eq('component_id', componentId)
+      .limit(1);
     
-    if (error) throw error;
-    return data;
+    const overrideData = {
+      component_id: componentId,
+      cycle_months: cycleMonths,
+      is_critical: isCritical,
+      user_id: (await supabase.auth.getUser()).data.user?.id,
+      updated_at: new Date().toISOString()
+    };
+    
+    if (existing && existing.length > 0) {
+      // Atnaujinti esamą
+      const { data, error } = await supabase
+        .from('component_cycle_overrides')
+        .update(overrideData)
+        .eq('id', existing[0].id)
+        .select()
+        .limit(1);
+      
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    } else {
+      // Sukurti naują
+      const { data, error } = await supabase
+        .from('component_cycle_overrides')
+        .insert(overrideData)
+        .select()
+        .limit(1);
+      
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    }
   }
 };
 
