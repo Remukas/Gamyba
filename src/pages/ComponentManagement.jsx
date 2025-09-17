@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 const ComponentManagement = () => {
   const {
     componentsInventory,
@@ -17,7 +18,8 @@ const ComponentManagement = () => {
     updateComponent,
     deleteComponent,
     subassemblies,
-    setSubassemblies
+    setSubassemblies,
+    categories
   } = useComponents();
   const {
     toast
@@ -25,6 +27,9 @@ const ComponentManagement = () => {
   const [newComponentName, setNewComponentName] = useState('');
   const [newComponentStock, setNewComponentStock] = useState('');
   const [newComponentLeadTime, setNewComponentLeadTime] = useState('');
+  const [newSubassemblyName, setNewSubassemblyName] = useState('');
+  const [newSubassemblyQuantity, setNewSubassemblyQuantity] = useState('');
+  const [newSubassemblyCategory, setNewSubassemblyCategory] = useState('');
   const [editingComponentId, setEditingComponentId] = useState(null);
   const [editingComponentValues, setEditingComponentValues] = useState({
     name: '',
@@ -112,6 +117,44 @@ const ComponentManagement = () => {
     }));
   };
   const filteredComponents = componentsInventory.filter(component => component.name.toLowerCase().includes(componentSearchTerm.toLowerCase()));
+  
+  const handleAddSubassembly = () => {
+    if (!newSubassemblyName || newSubassemblyQuantity === '' || !newSubassemblyCategory) {
+      toast({
+        title: 'Klaida',
+        description: 'Visi laukai turi būti užpildyti.',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const newSubassembly = {
+      id: `${newSubassemblyCategory}-${Date.now()}`,
+      name: newSubassemblyName,
+      quantity: parseInt(newSubassemblyQuantity, 10),
+      status: 'pending',
+      position: { x: 200 + Math.random() * 300, y: 150 + Math.random() * 200 },
+      children: [],
+      components: [],
+      category: newSubassemblyCategory,
+      comments: []
+    };
+    
+    setSubassemblies(prev => ({
+      ...prev,
+      [newSubassemblyCategory]: [...(prev[newSubassemblyCategory] || []), newSubassembly]
+    }));
+    
+    toast({
+      title: 'Pavyko!',
+      description: `Subasemblis "${newSubassemblyName}" sėkmingai pridėtas.`
+    });
+    
+    setNewSubassemblyName('');
+    setNewSubassemblyQuantity('');
+    setNewSubassemblyCategory('');
+  };
+  
   const handleEditSubassemblyClick = subassembly => {
     setEditingSubassemblyId(subassembly.id);
     setEditingSubassemblyValues({
@@ -354,6 +397,46 @@ const ComponentManagement = () => {
           }} transition={{
             duration: 0.5,
             delay: 0.1
+          }}>
+                                <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 mt-6">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                            <Plus className="h-6 w-6 text-blue-500" />
+                                            Pridėti Naują Subasemblį
+                                        </CardTitle>
+                                        <CardDescription>Įveskite naujo subasemblio duomenis.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+                                            <Input placeholder="Subasemblio pavadinimas" value={newSubassemblyName} onChange={e => setNewSubassemblyName(e.target.value)} />
+                                            <Input type="number" min="0" placeholder="Kiekis sandėlyje" value={newSubassemblyQuantity} onChange={e => setNewSubassemblyQuantity(e.target.value)} />
+                                            <Select value={newSubassemblyCategory} onValueChange={setNewSubassemblyCategory}>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pasirinkite kategoriją" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {categories.map(cat => (
+                                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button onClick={handleAddSubassembly} className="w-full">
+                                                <Plus className="mr-2 h-4 w-4" /> Pridėti
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+
+                            <motion.div initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            duration: 0.5,
+            delay: 0.2
           }}>
                                 <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 mt-6">
                                      <CardHeader>
