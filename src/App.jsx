@@ -13,6 +13,7 @@ import Analytics from '@/pages/Analytics';
 import QualityControl from '@/pages/QualityControl';
 import MaintenanceSchedule from '@/pages/MaintenanceSchedule';
 import AdminPanel from '@/pages/AdminPanel';
+import AIChat from '@/pages/AIChat';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const AppContent = () => {
@@ -94,6 +95,7 @@ const AppContent = () => {
               </ProtectedRoute>
             } 
           />
+          <Route path="ai-chat" element={<AIChat />} />
         </Route>
       </Routes>
       <Toaster />
