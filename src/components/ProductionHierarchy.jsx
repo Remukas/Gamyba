@@ -254,8 +254,8 @@ const ProductionHierarchy = () => {
       id: `${selectedCategory}-${Date.now()}`,
       ...data,
       position: { 
-        x: 3800 + Math.random() * 400, 
-        y: 2800 + Math.random() * 400 
+        x: 200 + Math.random() * 300, 
+        y: 150 + Math.random() * 200 
       },
       children: [],
       components: [],
@@ -282,8 +282,8 @@ const ProductionHierarchy = () => {
       targetQuantity: 1,
       status: 'pending',
       position: { 
-        x: 3800 + Math.random() * 400, 
-        y: 2800 + Math.random() * 400 
+        x: 200 + Math.random() * 300, 
+        y: 150 + Math.random() * 200 
       },
       children: [],
       components: data.components || [],
@@ -750,12 +750,12 @@ const ProductionHierarchy = () => {
             className="absolute inset-0"
             style={{ 
               transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-              width: '8000px',
-              height: '6000px',
+              width: '3000px',
+              height: '2000px',
               left: '50%',
               top: '50%',
-              marginLeft: '-4000px',
-              marginTop: '-3000px'
+              marginLeft: '-1500px',
+              marginTop: '-1000px'
             }}
           >
             {/* Render Subassemblies */}
