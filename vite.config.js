@@ -135,15 +135,7 @@ window.fetch = function(...args) {
 					}
 					
 					const requestUrl = response.url;
-					// Don't log PGRST116 errors as they are expected
-					try {
-						const errorObj = JSON.parse(errorFromRes);
-						if (errorObj.code !== 'PGRST116') {
-							console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
-						}
-					} catch (e) {
-						console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
-					}
+					console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
 			}
 
 			return response;
