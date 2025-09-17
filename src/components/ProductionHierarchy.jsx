@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useComponents } from '@/context/ComponentsContext';
 import { 
   BarChart3, 
-  TrendingUp, 
+  TrendingUp,
   Package, 
   AlertTriangle, 
   CheckCircle,
@@ -14,11 +14,19 @@ import {
   DollarSign,
   Target,
   Download,
-  HelpCircle
+  HelpCircle,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Unlock
 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
-const Analytics = () => {
+const ProductionHierarchy = () => {
   const { componentsInventory, subassemblies, categories } = useComponents();
+  const { toast } = useToast();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
   const analytics = useMemo(() => {
@@ -41,6 +49,21 @@ const Analytics = () => {
     };
   }, [componentsInventory, subassemblies]);
 
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const toggleLock = useCallback(() => {
+    setIsLocked(prev => {
+      const newLocked = !prev;
+      toast({
+        title: newLocked ? "Subasembliai užrakinti" : "Subasembliai atrakinti",
+        description: newLocked ? "Dabar negalite stumdyti subasemblių" : "Dabar galite laisvai stumdyti subasemblius"
+      });
+      return newLocked;
+    });
+  }, [toast]);
+
   const exportData = () => {
     const data = {
       analytics,
@@ -58,21 +81,47 @@ const Analytics = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-100 flex">
+      {/* Sidebar Toggle Button */}
+      <Button
+        onClick={toggleSidebar}
+        className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg border-0"
+        size="icon"
+      >
+        {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+      </Button>
+
+      {/* Sidebar */}
+      <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0' : 'w-80'} overflow-hidden bg-white/80 backdrop-blur-sm border-r shadow-lg`}>
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4">Gamybos Valdymas</h2>
+          <p className="text-gray-600">Produktų ir subasemblių valdymas</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto"
+        className="max-w-full"
       >
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              📊 Analitika ir Ataskaitos
+              🏭 Gamybos Medis
             </h1>
-            <p className="text-gray-600 text-lg">Gamybos efektyvumo ir veiklos rodiklių analizė</p>
+            <p className="text-gray-600 text-lg">Produktų ir subasemblių valdymas</p>
           </div>
           <div className="flex gap-3 mt-4 md:mt-0">
+            <Button
+              onClick={toggleLock}
+              className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg`}
+            >
+              {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
+              {isLocked ? 'Užrakinta' : 'Atrakinta'}
+            </Button>
             <Button
               onClick={() => setShowTutorial(true)}
               variant="outline"
@@ -83,12 +132,63 @@ const Analytics = () => {
             </Button>
             <Button
               onClick={exportData}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
             >
               <Download className="h-4 w-4 mr-2" />
               Eksportuoti
             </Button>
           </div>
+        </div>
+
+        {/* Lock Status */}
+        {isLocked && (
+          <div className="fixed bottom-4 left-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+            🔒 Subasembliai užrakinti
+          </div>
+        )}
+
+        {/* Tutorial Dialog */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-semibold mb-4">🏭 Gamybos Medžio Instrukcijos</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-blue-600">Šoninės Panelės Valdymas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Spauskite rodyklės mygtuką kairėje, kad susklapti/išskleisti šoninę panelę</li>
+                    <li>Susklapus panelę matysite pilną gamybos medžio vaizdą</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-red-600">Subasemblių Užrakinimas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Spauskite spynos mygtuką viršuje, kad užrakinti/atrakinti subasemblius</li>
+                    <li>Užrakinus negalėsite stumdyti subasemblių</li>
+                    <li>Užrakinti subasembliai pažymėti raudonu tašku</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-600">Ryšiai Tarp Subasemblių:</h4>
+                  <p>Mėlyni ryšiai su šešėliais rodo sąsajas tarp subasemblių - dabar aiškiau matomi.</p>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setShowTutorial(false)}>
+                  Supratau
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Main Canvas Area - This is where the production tree would be rendered */}
+        <div className="bg-white/50 rounded-xl p-8 min-h-96 border-2 border-dashed border-gray-300">
+          <p className="text-center text-gray-500">Gamybos medžio vizualizacija bus čia</p>
         </div>
 
         {/* KPI Cards */}
@@ -247,8 +347,9 @@ const Analytics = () => {
           </Card>
         </motion.div>
       </motion.div>
+      </div>
     </div>
   );
 };
 
-export default Analytics;
+export default ProductionHierarchy;
