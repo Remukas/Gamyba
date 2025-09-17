@@ -677,10 +677,10 @@ const ProductionHierarchy = () => {
       {/* Main Canvas Area */}
       <div className="flex-1 relative">
         {/* VIRŠUTINIAI MYGTUKAI - UŽRAKINTI IR PAGALBA */}
-        <div className="absolute top-4 right-4 z-50 flex gap-2">
+        <div className="absolute top-4 right-4 z-50 flex flex-col gap-3">
           <Button
             onClick={toggleLock}
-            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-8 py-4 h-auto min-w-[180px] whitespace-nowrap text-base font-medium`}
+            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-6 py-3 h-auto w-48 text-sm font-medium`}
           >
             {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
             {isLocked ? 'Užrakinta' : 'Atrakinta'}
@@ -689,7 +689,7 @@ const ProductionHierarchy = () => {
           <Button
             onClick={() => setShowTutorial(true)}
             variant="outline"
-            className="bg-white/80 backdrop-blur-sm hover:bg-white px-8 py-4 h-auto min-w-[140px] whitespace-nowrap text-base font-medium"
+            className="bg-white/90 backdrop-blur-sm hover:bg-white px-6 py-3 h-auto w-48 text-sm font-medium border-2"
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
@@ -697,44 +697,44 @@ const ProductionHierarchy = () => {
         </div>
 
         {/* ZOOM VALDYMO MYGTUKAI - CENTRE VIRŠUJE */}
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 flex gap-2 bg-white/95 backdrop-blur-sm rounded-xl p-3 shadow-xl border-2">
           <Button
             onClick={handleZoomIn}
             size="sm"
             variant="outline"
-            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            className="h-12 w-12 p-0 bg-white hover:bg-gray-50 border-2"
             title="Padidinti mastelį"
           >
-            <ZoomIn className="h-5 w-5" />
+            <ZoomIn className="h-6 w-6" />
           </Button>
           <Button
             onClick={handleZoomOut}
             size="sm"
             variant="outline"
-            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            className="h-12 w-12 p-0 bg-white hover:bg-gray-50 border-2"
             title="Sumažinti mastelį"
           >
-            <ZoomOut className="h-5 w-5" />
+            <ZoomOut className="h-6 w-6" />
           </Button>
           <Button
             onClick={handleFitToScreen}
             size="sm"
             variant="outline"
-            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            className="h-12 w-12 p-0 bg-white hover:bg-gray-50 border-2"
             title="Pritaikyti ekranui"
           >
-            <Maximize className="h-5 w-5" />
+            <Maximize className="h-6 w-6" />
           </Button>
           <Button
             onClick={handleResetView}
             size="sm"
             variant="outline"
-            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            className="h-12 w-12 p-0 bg-white hover:bg-gray-50 border-2"
             title="Grįžti į pradinį vaizdą"
           >
-            <RotateCcw className="h-5 w-5" />
+            <RotateCcw className="h-6 w-6" />
           </Button>
-          <div className="flex items-center px-3 text-sm font-medium text-gray-700 bg-gray-100 rounded">
+          <div className="flex items-center px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg border-2">
             {Math.round(zoom * 100)}%
           </div>
         </div>
@@ -781,35 +781,35 @@ const ProductionHierarchy = () => {
         </div>
 
         {/* PLŪDURIUOJANTIS AI CHAT DEŠINIAME KAMPE */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-8 right-8 z-50">
           {!showAIAssistant ? (
             <Button
               onClick={() => setShowAIAssistant(true)}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200 rounded-full w-16 h-16 p-0 border-4 border-white"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-200 rounded-full w-20 h-20 p-0 border-4 border-white animate-pulse"
               title="AI Gamybos Asistentas"
             >
-              <Bot className="h-8 w-8" />
+              <Bot className="h-10 w-10" />
             </Button>
           ) : (
-            <div className="bg-white rounded-2xl shadow-2xl border-2 border-purple-200 w-96 h-[600px] flex flex-col overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-2xl border-4 border-purple-300 w-[420px] h-[650px] flex flex-col overflow-hidden">
               {/* Chat Header */}
               <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-white/20 p-2 rounded-full">
-                    <Bot className="h-5 w-5" />
+                  <div className="bg-white/20 p-2 rounded-full animate-pulse">
+                    <Bot className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm">AI Gamybos Strategas</h3>
-                    <p className="text-xs text-purple-100">Jūsų protingas asistentas</p>
+                    <h3 className="font-bold text-base">🤖 AI Gamybos Strategas</h3>
+                    <p className="text-sm text-purple-100">Jūsų protingas asistentas</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowAIAssistant(false)}
                   variant="ghost"
                   size="icon"
-                  className="text-white hover:bg-white/20 h-8 w-8"
+                  className="text-white hover:bg-white/20 h-10 w-10 rounded-full"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
 
