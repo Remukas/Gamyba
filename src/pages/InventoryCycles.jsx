@@ -549,8 +549,8 @@ const InventoryCycles = () => {
               <div className="flex justify-end mt-6">
                 <Button onClick={() => setShowTutorial(false)}>Supratau</Button>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         )}
       </motion.div>
     </div>
