@@ -243,6 +243,7 @@ const ProductionHierarchy = () => {
       description: `Atnaujinta ${updatedComponents} komponentų ir ${updatedSubassemblies} subasemblių`
     });
   }, [updateComponentStock, updateSubassemblyQuantity, toast]);
+  
   const handleUpdateSubassembly = useCallback((id, updates) => {
     const updatedSubassemblies = { ...subassemblies };
     
@@ -512,18 +513,19 @@ const ProductionHierarchy = () => {
             {Math.round(zoom * 100)}%
           </div>
         </div>
+        
         {/* Lock Status Indicator */}
         {isLocked && (
-          <div className="fixed bottom-4 left-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+          <div className={`fixed ${isSidebarCollapsed ? 'left-4' : 'left-[316px]'} bottom-32 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50`}>
             🔒 Subasembliai užrakinti
           </div>
-          isSidebarCollapsed ? 'left-4' : 'left-[316px]'
-        } bottom-32`}
+        )}
+        
         {/* Canvas */}
         <div 
           ref={canvasRef}
           className="w-full h-full hierarchy-canvas overflow-hidden relative"
-          style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
+          style={{ transform: \`scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
         >
           {/* Render Subassemblies */}
           <AnimatePresence>
