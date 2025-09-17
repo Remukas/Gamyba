@@ -17,7 +17,9 @@ import {
   HelpCircle,
   Package,
   Zap,
-  Bot
+  Bot,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 import SubassemblyNode from '@/components/SubassemblyNode';
 import SubassemblyDetails from '@/components/SubassemblyDetails';
@@ -86,6 +88,27 @@ const ProductionHierarchy = () => {
       sa.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [currentCategorySubassemblies, searchTerm]);
+
+  // Calculate progress for each category
+  const categoryProgress = useMemo(() => {
+    const progress = {};
+    categories.forEach(category => {
+      const categorySubassemblies = subassemblies[category.id] || [];
+      const totalSubassemblies = categorySubassemblies.length;
+      const completedSubassemblies = categorySubassemblies.filter(sa => 
+        sa.status === 'completed' && sa.quantity > 0
+      ).length;
+      
+      const percentage = totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0;
+      
+      progress[category.id] = {
+        percentage,
+        completed: completedSubassemblies,
+        total: totalSubassemblies
+      };
+    });
+    return progress;
+  }, [categories, subassemblies]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(prev => !prev);
@@ -327,8 +350,6 @@ const ProductionHierarchy = () => {
 
   return (
     <div className="h-screen w-screen flex bg-gradient-to-br from-gray-50 to-blue-50">
-      {/* Sidebar Toggle Button */}
-
       {/* Sidebar */}
       <div className={`transition-all duration-300 ${isSidebarCollapsed ? 'w-0' : 'w-80'} overflow-hidden bg-white/80 backdrop-blur-sm border-r shadow-lg relative`}>
         <div className="p-6 h-full flex flex-col">
@@ -363,32 +384,68 @@ const ProductionHierarchy = () => {
             </div>
           </div>
 
-          {/* Category List */}
+          {/* Category List with Progress */}
           <div className="flex-1 overflow-y-auto">
-            <div className="space-y-2">
+            <div className="space-y-3">
               {categories.map(category => {
                 const categorySubassemblies = subassemblies[category.id] || [];
+                const progress = categoryProgress[category.id] || { percentage: 0, completed: 0, total: 0 };
+                
                 return (
                   <div key={category.id}>
                     <div 
-                      className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                        selectedCategory === category.id ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                      className={`p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
+                        selectedCategory === category.id 
+                          ? 'bg-blue-100 border-blue-300 text-blue-800 shadow-md' 
+                          : 'hover:bg-gray-100 border-gray-200'
                       }`}
                       onClick={() => setSelectedCategory(category.id)}
                     >
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
-                        <span className="text-sm font-medium">{category.name}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
+                          <span className="text-sm font-medium">{category.name}</span>
+                        </div>
+                      </div>
+                      
+                      {/* PROGRESS BAR - ČIAA MATYSITE PROGRESĄ! */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-gray-600">
+                            {progress.completed}/{progress.total} subasemblių
+                          </span>
+                          <span className="text-sm font-bold text-green-600">
+                            {progress.percentage}%
+                          </span>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${progress.percentage}%` }}
+                          ></div>
+                        </div>
                       </div>
                     </div>
                     
                     {selectedCategory === category.id && (
                       <div className="ml-4 mt-2 space-y-1">
-                        {categorySubassemblies.map(sa => (
-                          <div key={sa.id} className="text-xs text-gray-600 p-1 hover:bg-gray-50 rounded">
-                            {sa.name}
-                          </div>
-                        ))}
+                        {categorySubassemblies.map(sa => {
+                          const isCompleted = sa.status === 'completed' && sa.quantity > 0;
+                          return (
+                            <div key={sa.id} className="flex items-center gap-2 text-xs text-gray-600 p-1 hover:bg-gray-50 rounded">
+                              {isCompleted ? (
+                                <CheckCircle className="h-3 w-3 text-green-500" />
+                              ) : (
+                                <Circle className="h-3 w-3 text-gray-400" />
+                              )}
+                              <span className={isCompleted ? 'text-green-700 font-medium' : ''}>
+                                {sa.name}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -415,8 +472,8 @@ const ProductionHierarchy = () => {
               <div className="text-sm font-medium mb-2">
                 {categories.find(c => c.id === selectedCategory)?.name}
               </div>
-              <div className="text-xs text-gray-600">
-                {currentCategorySubassemblies.length} vnt.
+              <div className="text-xs text-gray-600 mb-3">
+                {currentCategorySubassemblies.length} vnt. • {categoryProgress[selectedCategory]?.percentage || 0}% baigta
               </div>
               <div className="flex gap-2 mt-2">
                 <Button size="sm" onClick={() => setShowAddDialog(true)}>
@@ -437,8 +494,8 @@ const ProductionHierarchy = () => {
       {/* Sidebar Toggle Button - Always Visible */}
       <Button
         onClick={toggleSidebar}
-        className={`fixed bottom-8 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-14 h-14 p-0 transition-all duration-300 flex items-center justify-center ${
-          isSidebarCollapsed ? 'left-0' : 'left-80'
+        className={`fixed z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-14 h-14 p-0 transition-all duration-300 flex items-center justify-center ${
+          isSidebarCollapsed ? 'left-4 bottom-8' : 'left-[336px] bottom-8'
         }`}
         size="sm"
       >
