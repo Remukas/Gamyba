@@ -111,16 +111,6 @@ const InventoryCycles = () => {
       
     } catch (error) {
       console.error('Klaida kraunant duomenis:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko užkrauti duomenų iš duomenų bazės.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Supabase duomenų būsenos
   const [cycleSettings, setCycleSettings] = useState({
     defaultCycleMonths: 3,
