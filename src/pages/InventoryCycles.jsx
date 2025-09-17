@@ -128,6 +128,9 @@ const InventoryCycles = () => {
     const startDate = new Date(cycleSettings.startDate);
     const currentYear = startDate.getFullYear();
     
+    // SVARBU: Naudojame DABARTINĮ komponentų sąrašą, ne istorinį
+    // Tai reiškia, kad nauji komponentai automatiškai pateks į grafiką
+    
     for (let week = 1; week <= 52; week++) {
       const weekStart = new Date(currentYear, 0, 1 + (week - 1) * 7);
       const weekEnd = new Date(weekStart);
@@ -135,18 +138,26 @@ const InventoryCycles = () => {
       
       const weekComponents = [];
       
+      // Dinamiškai įtraukti VISUS dabartinės sistemos komponentus
       componentsInventory.forEach(component => {
         const customCycle = cycleSettings.customCycles[component.id];
         const cycleMonths = customCycle || cycleSettings.defaultCycleMonths;
         
-        const componentStartWeek = (component.id.charCodeAt(component.id.length - 1) % 52) + 1;
+        // Naujiems komponentams - pradėti nuo sekančios savaitės
+        const componentHash = component.id.split('').reduce((a, b) => {
+          a = ((a << 5) - a) + b.charCodeAt(0);
+          return a & a;
+        }, 0);
+        const componentStartWeek = (Math.abs(componentHash) % 52) + 1;
         const cycleWeeks = Math.round(cycleMonths * 4.33);
         
         if ((week - componentStartWeek) % cycleWeeks === 0 && week >= componentStartWeek) {
           weekComponents.push({
             ...component,
             cycleMonths,
-            isCritical: cycleSettings.criticalComponents.includes(component.id)
+            isCritical: cycleSettings.criticalComponents.includes(component.id),
+            nextScheduledWeek: week,
+            lastInventoryDate: getLastInventoryDate(component.id)
           });
         }
       });
@@ -156,13 +167,60 @@ const InventoryCycles = () => {
         weekStart: weekStart.toISOString().split('T')[0],
         weekEnd: weekEnd.toISOString().split('T')[0],
         components: weekComponents,
-        totalComponents: weekComponents.length
+        totalComponents: weekComponents.length,
+        criticalComponents: weekComponents.filter(c => c.isCritical).length
       });
     }
     
     return schedule;
   }, [componentsInventory, cycleSettings]);
 
+  // Gauti paskutinės inventorizacijos datą komponentui
+  const getLastInventoryDate = useCallback((componentId) => {
+    const lastRecord = inventoryRecords
+      .filter(record => record.componentId === componentId)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    
+    return lastRecord ? lastRecord.date : null;
+  }, [inventoryRecords]);
+
+  // Automatiškai aptikti naujus komponentus, kuriems reikia inventorizacijos
+  const newComponentsNeedingInventory = useMemo(() => {
+    return componentsInventory.filter(component => {
+      const hasAnyRecord = inventoryRecords.some(record => record.componentId === component.id);
+      return !hasAnyRecord; // Naujas komponentas, jei nėra jokių įrašų
+    });
+  }, [componentsInventory, inventoryRecords]);
+
+  // Komponentai, kuriems vėluoja inventorizacija
+  const overdueComponents = useMemo(() => {
+    const today = new Date();
+    const overdueList = [];
+    
+    componentsInventory.forEach(component => {
+      const customCycle = cycleSettings.customCycles[component.id];
+      const cycleMonths = customCycle || cycleSettings.defaultCycleMonths;
+      const lastInventoryDate = getLastInventoryDate(component.id);
+      
+      if (lastInventoryDate) {
+        const lastDate = new Date(lastInventoryDate);
+        const nextDueDate = new Date(lastDate);
+        nextDueDate.setMonth(nextDueDate.getMonth() + cycleMonths);
+        
+        if (today > nextDueDate) {
+          const daysOverdue = Math.floor((today - nextDueDate) / (1000 * 60 * 60 * 24));
+          overdueList.push({
+            ...component,
+            lastInventoryDate,
+            daysOverdue,
+            nextDueDate: nextDueDate.toISOString().split('T')[0]
+          });
+        }
+      }
+    });
+    
+    return overdueList.sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [componentsInventory, cycleSettings, getLastInventoryDate]);
   // Analitikos skaičiavimai
   const analytics = useMemo(() => {
     const totalRecords = inventoryRecords.length;
@@ -285,9 +343,11 @@ const InventoryCycles = () => {
       criticalComponents,
       completedThisMonth,
       upcomingComponents,
-      averagePerWeek: Math.round(totalComponents / 52 * cycleSettings.defaultCycleMonths)
+      averagePerWeek: Math.round(totalComponents / 52 * cycleSettings.defaultCycleMonths),
+      newComponents: newComponentsNeedingInventory.length,
+      overdueComponents: overdueComponents.length
     };
-  }, [componentsInventory, cycleSettings, inventoryRecords, yearlySchedule]);
+  }, [componentsInventory, cycleSettings, inventoryRecords, yearlySchedule, newComponentsNeedingInventory, overdueComponents]);
 
   // Pridėti inventorizacijos įrašą
   const handleAddRecord = async () => {
@@ -490,7 +550,7 @@ const InventoryCycles = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6 mb-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
@@ -542,6 +602,34 @@ const InventoryCycles = () => {
                     <p className="text-3xl font-bold">{cycleStats.upcomingComponents}</p>
                   </div>
                   <Clock className="h-8 w-8 text-orange-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm">Nauji Komponentai</p>
+                    <p className="text-3xl font-bold">{cycleStats.newComponents}</p>
+                  </div>
+                  <Plus className="h-8 w-8 text-amber-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+            <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-rose-100 text-sm">Vėluoja</p>
+                    <p className="text-3xl font-bold">{cycleStats.overdueComponents}</p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-rose-200" />
                 </div>
               </CardContent>
             </Card>
@@ -647,12 +735,15 @@ const InventoryCycles = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: week.week * 0.01 }}
-                      className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${getWeekColor(week.totalComponents)}`}
-                      title={`Savaitė ${week.week}: ${week.totalComponents} komponentų`}
+                      className={`p-3 rounded-lg border-2 cursor-pointer hover:shadow-md transition-all ${getWeekColor(week.totalComponents)} ${week.criticalComponents > 0 ? 'ring-2 ring-red-400' : ''}`}
+                      title={`Savaitė ${week.week}: ${week.totalComponents} komponentų${week.criticalComponents > 0 ? ` (${week.criticalComponents} kritinių)` : ''}`}
                     >
                       <div className="text-center">
                         <div className="text-xs font-bold text-gray-700">W{week.week.toString().padStart(2, '0')}</div>
                         <div className="text-lg font-bold text-gray-900">{week.totalComponents}</div>
+                        {week.criticalComponents > 0 && (
+                          <div className="text-xs font-bold text-red-600">🔥{week.criticalComponents}</div>
+                        )}
                         <div className="text-xs text-gray-600">
                           {new Date(week.weekStart).toLocaleDateString('lt-LT', { month: 'short', day: 'numeric' })}
                         </div>
