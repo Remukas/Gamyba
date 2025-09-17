@@ -952,14 +952,14 @@ const InventoryCycles = () => {
                   </div>
 
                   <Button 
-                    onClick={() => {
+                    onClick={async () => {
                       setCycleSettings(prev => ({...prev, startDate: new Date().toISOString().split('T')[0]}));
-                      toast({ title: "Nustatymai atnaujinti!", description: "Pradžios data nustatyta į šiandien." });
+                      await saveSettings();
                     }}
                     className="w-full"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Atnaujinti Grafiką
+                    Išsaugoti Nustatymus
                   </Button>
                 </CardContent>
               </Card>
