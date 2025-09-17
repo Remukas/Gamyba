@@ -134,8 +134,9 @@ window.fetch = function(...args) {
 						// If parsing fails, continue with normal error logging
 					}
 					
-					const requestUrl = response.url;
-					console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
+				// Only log non-PGRST116 errors
+				const requestUrl = response.url;
+				console.error(\`Fetch error from \${requestUrl}: \${errorFromRes}\`);
 			}
 
 			return response;
