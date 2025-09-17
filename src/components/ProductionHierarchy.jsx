@@ -203,8 +203,8 @@ const ProductionHierarchy = () => {
       id: `${selectedCategory}-${Date.now()}`,
       ...data,
       position: { 
-        x: 200 + Math.random() * 300, 
-        y: 150 + Math.random() * 200 
+        x: 1800 + Math.random() * 400, 
+        y: 1300 + Math.random() * 400 
       },
       children: [],
       components: [],
@@ -231,8 +231,8 @@ const ProductionHierarchy = () => {
       targetQuantity: 1,
       status: 'pending',
       position: { 
-        x: 200 + Math.random() * 300, 
-        y: 150 + Math.random() * 200 
+        x: 1800 + Math.random() * 400, 
+        y: 1300 + Math.random() * 400 
       },
       children: [],
       components: data.components || [],
@@ -590,14 +590,15 @@ const ProductionHierarchy = () => {
             transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
           }}
         >
-          {/* MILŽINIŠKAS PLOTAS SUBASEMBLIAMS */}
+          {/* DIDELIS PLOTAS SUBASEMBLIAMS - CENTRUOTAS */}
           <div 
             className="absolute"
             style={{ 
-              width: '8000px',
-              height: '6000px',
-              left: '-4000px',
-              top: '-3000px'
+              width: '4000px',
+              height: '3000px',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)'
             }}
           >
             {/* Render Subassemblies */}
