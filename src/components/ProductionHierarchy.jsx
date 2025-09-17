@@ -71,6 +71,8 @@ const ProductionHierarchy = () => {
   // Zoom and pan
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   
   // Default statuses
@@ -149,6 +151,49 @@ const ProductionHierarchy = () => {
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)));
   }, []);
+
+  const handleMouseDown = useCallback((e) => {
+    if (e.button === 0) { // Left mouse button
+      setIsPanning(true);
+      setPanStart({
+        x: e.clientX - pan.x,
+        y: e.clientY - pan.y
+      });
+      e.preventDefault();
+    }
+  }, [pan]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      });
+      e.preventDefault();
+    }
+  }, [isPanning, panStart]);
+
+  const handleMouseUp = useCallback((e) => {
+    if (e.button === 0) { // Left mouse button
+      setIsPanning(false);
+      e.preventDefault();
+    }
+  }, []);
+
+  // Add global mouse event listeners
+  useEffect(() => {
+    if (isPanning) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'grabbing';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = 'default';
+      };
+    }
+  }, [isPanning, handleMouseMove, handleMouseUp]);
 
   const handleSubassemblyClick = useCallback((subassembly) => {
     if (isConnecting) {
@@ -584,8 +629,9 @@ const ProductionHierarchy = () => {
         {/* Canvas */}
         <div 
           ref={canvasRef}
-          className="w-full h-full hierarchy-canvas relative overflow-hidden"
+          className={`w-full h-full hierarchy-canvas relative overflow-hidden ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
           onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
         >
           <div 
             className="absolute inset-0"
