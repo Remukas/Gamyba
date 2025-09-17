@@ -142,6 +142,12 @@ const ProductionHierarchy = () => {
     setPan({ x: 0, y: 0 });
   }, []);
 
+  const handleWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(prev => Math.max(0.1, Math.min(3, prev * delta)));
+  }, []);
+
   const handleSubassemblyClick = useCallback((subassembly) => {
     if (isConnecting) {
       if (!connectionSource) {
@@ -534,7 +540,7 @@ const ProductionHierarchy = () => {
         </div>
 
         {/* Zoom Controls */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-40 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
           <Button
             onClick={handleZoomIn}
             size="sm"
@@ -582,7 +588,8 @@ const ProductionHierarchy = () => {
         {/* Canvas */}
         <div 
           ref={canvasRef}
-          className="w-full h-full hierarchy-canvas relative"
+          className="w-full h-full hierarchy-canvas relative overflow-hidden"
+          onWheel={handleWheel}
           style={{ 
             transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
             minWidth: '200vw',
