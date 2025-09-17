@@ -5,7 +5,7 @@ import React, { useState, useMemo } from 'react';
     import { useToast } from '@/components/ui/use-toast';
     import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-    const SubassemblyNode = ({ subassembly, isSelected, onClick, onUpdate, zoom, isConnectingTarget, statuses }) => {
+    const SubassemblyNode = ({ subassembly, isSelected, onClick, onUpdate, zoom, isConnectingTarget, statuses, isLocked = false }) => {
       const { toast } = useToast();
       const [isDragging, setIsDragging] = useState(false);
       const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -15,6 +15,7 @@ import React, { useState, useMemo } from 'react';
       }, [subassembly.status, statuses]);
 
       const handleMouseDown = (e) => {
+        if (isLocked) return;
         e.stopPropagation();
         setIsDragging(true);
         setDragStart({
@@ -24,7 +25,7 @@ import React, { useState, useMemo } from 'react';
       };
       
       const handleMouseMove = (e) => {
-        if (isDragging) {
+        if (isDragging && !isLocked) {
           const newPosition = {
             x: e.clientX / zoom - dragStart.x,
             y: e.clientY / zoom - dragStart.y
@@ -68,13 +69,14 @@ import React, { useState, useMemo } from 'react';
                   width: 200,
                   height: 120,
                   zIndex: isSelected ? 10 : 1,
+                  cursor: isLocked ? 'default' : 'grab'
                 }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={() => setIsDragging(false)}
               >
-                <div className={`${backgroundClass} backdrop-blur-sm rounded-lg border hover:shadow-xl transition-shadow duration-300 flex flex-col h-full p-4`}>
+                <div className={`${backgroundClass} backdrop-blur-sm rounded-lg border ${isLocked ? '' : 'hover:shadow-xl'} transition-shadow duration-300 flex flex-col h-full p-4 ${isLocked ? 'opacity-90' : ''}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm text-gray-900 leading-tight">
@@ -123,6 +125,11 @@ import React, { useState, useMemo } from 'react';
                     
                     {hasIssues && (
                       <AlertCircle className="h-4 w-4 text-yellow-500" />
+                    )}
+                    {isLocked && (
+                      <div className="absolute top-1 right-1">
+                        <div className="w-3 h-3 bg-red-500 rounded-full opacity-60"></div>
+                      </div>
                     )}
                   </div>
                 </div>

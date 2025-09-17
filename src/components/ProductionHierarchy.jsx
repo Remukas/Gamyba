@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
     import { motion, AnimatePresence } from 'framer-motion';
-    import { ZoomIn, ZoomOut, RotateCcw, Plus, Search, Settings, FileUp, Component, Trash2, Edit } from 'lucide-react';
+    import { ZoomIn, ZoomOut, RotateCcw, Plus, Search, Settings, FileUp, Component, Trash2, Edit, ChevronLeft, ChevronRight, Lock, Unlock } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
     import { Checkbox } from '@/components/ui/checkbox';
@@ -75,6 +75,8 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
       const [filterHasComments, setFilterHasComments] = useState(false);
       const [showComponentListDialog, setShowComponentListDialog] = useState(false);
       const [nodeForComponents, setNodeForComponents] = useState(null);
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+      const [nodesLocked, setNodesLocked] = useState(false);
 
       const [statuses, setStatuses] = useState(() => {
         const saved = localStorage.getItem('production-statuses');
@@ -381,7 +383,11 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
       }, [categories, activeCategory]);
 
       return <div className="h-full flex">
-          <div className="w-80 sidebar border-r flex flex-col z-20 bg-white">
+          <motion.div 
+            className={`${sidebarCollapsed ? 'w-0' : 'w-80'} sidebar border-r flex flex-col z-20 bg-white transition-all duration-300 overflow-hidden`}
+            animate={{ width: sidebarCollapsed ? 0 : 320 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
             <div className="p-6 border-b">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Gamybos medis</h1>
               <p className="text-sm text-muted-foreground mt-1">
@@ -508,6 +514,18 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                     </TabsContent>)}
               </div>
             </Tabs>
+          </motion.div>
+
+          {/* Sidebar Toggle Button */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-4 -right-4 z-30 bg-white shadow-lg hover:shadow-xl"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
           </div>
 
           <div className="flex-1 relative">
@@ -515,12 +533,26 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
               <div ref={canvasRef} className={`w-full h-full hierarchy-canvas cursor-grab active:cursor-grabbing overflow-hidden ${connectingMode ? 'connecting-mode' : ''}`} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
                 <motion.div className="absolute top-0 left-0" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
                   <AnimatePresence>
-                    {filteredSubassemblies.map(item => <SubassemblyNode key={item.id} subassembly={item} statuses={statuses} isSelected={selectedNode?.id === item.id} onClick={() => handleNodeClick(item)} onUpdate={updates => updateSubassembly(item.id, updates)} zoom={zoom} isConnectingTarget={connectingMode && connectingMode.sourceId !== item.id} />)}
+                    {filteredSubassemblies.map(item => <SubassemblyNode key={item.id} subassembly={item} statuses={statuses} isSelected={selectedNode?.id === item.id} onClick={() => handleNodeClick(item)} onUpdate={updates => updateSubassembly(item.id, updates)} zoom={zoom} isConnectingTarget={connectingMode && connectingMode.sourceId !== item.id} isLocked={nodesLocked} />)}
                   </AnimatePresence>
                    {allSubassemblies.map(item => item.children?.map(childId => {
                   const child = allSubassemblies.find(c => c.id === childId);
                   if (!child || !allSubassemblies.some(f => f.id === item.id) || !allSubassemblies.some(f => f.id === child.id)) return null;
-                  return <Xarrow key={`${item.id}-${childId}`} start={item.id} end={childId} strokeWidth={2 / zoom} color="#cbd5e1" path="grid" showHead={false} startAnchor="right" endAnchor="left" zIndex={-1} />;
+                  return <Xarrow 
+                    key={`${item.id}-${childId}`} 
+                    start={item.id} 
+                    end={childId} 
+                    strokeWidth={Math.max(2, 3 / zoom)} 
+                    color="#3b82f6" 
+                    path="smooth" 
+                    showHead={true}
+                    headSize={Math.max(4, 6 / zoom)}
+                    startAnchor="right" 
+                    endAnchor="left" 
+                    zIndex={-1}
+                    dashness={{ strokeLen: 0, nonStrokeLen: 0 }}
+                    curveness={0.3}
+                  />;
                 }))}
                 </motion.div>
               </div>
@@ -536,6 +568,14 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
               <Button size="sm" variant="outline" onClick={resetView}>
                 <RotateCcw className="h-4 w-4" />
               </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={() => setNodesLocked(!nodesLocked)}
+                className={nodesLocked ? 'bg-red-100 text-red-600 border-red-300' : 'bg-green-100 text-green-600 border-green-300'}
+              >
+                {nodesLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+              </Button>
             </div>
 
             {connectingMode && <div className="absolute top-4 left-4 z-10 bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-lg shadow-lg flex items-center">
@@ -546,6 +586,15 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
             <div className="absolute bottom-4 right-4 z-10 bg-white/50 backdrop-blur-sm rounded-lg px-3 py-1">
               <span className="text-sm font-medium">{Math.round(zoom * 100)}%</span>
             </div>
+            
+            {nodesLocked && (
+              <div className="absolute bottom-4 left-4 z-10 bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg shadow-lg">
+                <div className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-sm font-medium">Subasembliai užrakinti</span>
+                </div>
+              </div>
+            )}
 
           </div>
 
