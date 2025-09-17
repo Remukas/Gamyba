@@ -525,7 +525,7 @@ const ProductionHierarchy = () => {
         <div 
           ref={canvasRef}
           className="w-full h-full hierarchy-canvas overflow-hidden relative"
-          style={{ transform: \`scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
+          style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
         >
           {/* Render Subassemblies */}
           <AnimatePresence>
