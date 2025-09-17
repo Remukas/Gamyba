@@ -698,6 +698,16 @@ const ProductionHierarchy = () => {
           >
             <RotateCcw className="h-6 w-6" />
           </Button>
+          <Button
+            onClick={toggleLock}
+            size="sm"
+            variant="outline"
+            className={`h-12 px-4 ${isLocked ? 'bg-red-100 text-red-700 border-red-300 hover:bg-red-200' : 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'} border-2 font-semibold`}
+            title={isLocked ? "Atrakinti subasemblius" : "Užrakinti subasemblius"}
+          >
+            {isLocked ? <Lock className="h-5 w-5 mr-2" /> : <Unlock className="h-5 w-5 mr-2" />}
+            {isLocked ? 'Užrakinta' : 'Atrakinta'}
+          </Button>
           <div className="flex items-center px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-lg border-2">
             {Math.round(zoom * 100)}%
           </div>
