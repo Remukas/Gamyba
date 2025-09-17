@@ -111,82 +111,6 @@ const InventoryCycles = () => {
       
     } catch (error) {
       console.error('Klaida kraunant duomenis:', error);
-  // Supabase duomenų būsenos
-  const [cycleSettings, setCycleSettings] = useState({
-    defaultCycleMonths: 3,
-    startDate: new Date().toISOString().split('T')[0],
-    criticalComponents: [],
-    customCycles: {}
-  });
-  
-  const [inventoryRecords, setInventoryRecords] = useState([]);
-  const [componentOverrides, setComponentOverrides] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Naujo įrašo forma
-  const [newRecord, setNewRecord] = useState({
-    componentId: '',
-    actualStock: '',
-    notes: '',
-    inspector: 'Dabartinis vartotojas'
-  });
-
-  // Užkrauti duomenis iš Supabase
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Užkrauti nustatymus
-      const settings = await inventoryCyclesAPI.getSettings();
-      setCycleSettings({
-        defaultCycleMonths: settings.default_cycle_months || 3,
-        startDate: settings.start_date || new Date().toISOString().split('T')[0],
-        criticalComponents: [],
-        customCycles: {}
-      });
-      
-      // Užkrauti įrašus
-      const records = await inventoryCyclesAPI.getRecords();
-      const formattedRecords = records.map(record => ({
-        id: record.id,
-        componentId: record.component_id,
-        date: record.check_date,
-        expectedStock: record.expected_stock,
-        actualStock: record.actual_stock,
-        difference: record.difference,
-        notes: record.notes,
-        inspector: record.inspector,
-        week: record.week_number
-      }));
-      setInventoryRecords(formattedRecords);
-      
-      // Užkrauti komponentų perrašymus
-      const overrides = await inventoryCyclesAPI.getComponentOverrides();
-      setComponentOverrides(overrides);
-      
-      // Atnaujinti nustatymus su perrašymais
-      const customCycles = {};
-      const criticalComponents = [];
-      
-      overrides.forEach(override => {
-        customCycles[override.component_id] = override.cycle_months;
-        if (override.is_critical) {
-          criticalComponents.push(override.component_id);
-        }
-      });
-      
-      setCycleSettings(prev => ({
-        ...prev,
-        customCycles,
-        criticalComponents
-      }));
-      
-    } catch (error) {
-      console.error('Klaida kraunant duomenis:', error);
       toast({
         title: "Klaida",
         description: "Nepavyko užkrauti duomenų iš duomenų bazės.",
@@ -237,103 +161,6 @@ const InventoryCycles = () => {
     
     return schedule;
   }, [componentsInventory, cycleSettings]);
-
-  // Analitikos skaičiavimai
-  const analytics = useMemo(() => {
-    const totalRecords = inventoryRecords.length;
-    const accurateRecords = inventoryRecords.filter(r => r.difference === 0).length;
-    const discrepancies = inventoryRecords.filter(r => r.difference !== 0).length;
-    const shortages = inventoryRecords.filter(r => r.difference < 0).length;
-    const surpluses = inventoryRecords.filter(r => r.difference > 0).length;
-    
-    const accuracyRate = totalRecords > 0 ? Math.round((accurateRecords / totalRecords) * 100) : 0;
-    
-    // Probleminiai komponentai
-    const componentIssues = {};
-    inventoryRecords.forEach(record => {
-      if (record.difference !== 0) {
-        if (!componentIssues[record.componentId]) {
-          componentIssues[record.componentId] = {
-            componentId: record.componentId,
-            totalChecks: 0,
-            discrepancies: 0,
-            totalDifference: 0,
-            lastCheck: record.date
-          };
-        }
-        componentIssues[record.componentId].discrepancies++;
-        componentIssues[record.componentId].totalDifference += Math.abs(record.difference);
-      }
-    });
-
-    // Visų komponentų statistika
-    inventoryRecords.forEach(record => {
-      if (!componentIssues[record.componentId]) {
-        componentIssues[record.componentId] = {
-          componentId: record.componentId,
-          totalChecks: 0,
-          discrepancies: 0,
-          totalDifference: 0,
-          lastCheck: record.date
-        };
-      }
-      componentIssues[record.componentId].totalChecks++;
-    });
-
-    const topProblematicComponents = Object.values(componentIssues)
-      .map(issue => {
-        const component = componentsInventory.find(c => c.id === issue.componentId);
-        const errorRate = issue.totalChecks > 0 ? Math.round((issue.discrepancies / issue.totalChecks) * 100) : 0;
-        
-        return {
-          ...issue,
-          componentName: component?.name || 'Nežinomas komponentas',
-          errorRate,
-          avgDifference: issue.discrepancies > 0 ? Math.round(issue.totalDifference / issue.discrepancies) : 0
-        };
-      })
-      .sort((a, b) => b.errorRate - a.errorRate)
-      .slice(0, 10);
-
-    // Mėnesinės tendencijos
-    const monthlyTrends = [];
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-      
-      const monthRecords = inventoryRecords.filter(record => {
-        const recordDate = new Date(record.date);
-        return recordDate.getFullYear() === date.getFullYear() && 
-               recordDate.getMonth() === date.getMonth();
-      });
-      
-      const monthAccurate = monthRecords.filter(r => r.difference === 0).length;
-      const monthTotal = monthRecords.length;
-      const monthAccuracy = monthTotal > 0 ? Math.round((monthAccurate / monthTotal) * 100) : 0;
-      const monthShortages = monthRecords.filter(r => r.difference < 0).length;
-      const monthSurpluses = monthRecords.filter(r => r.difference > 0).length;
-      
-      monthlyTrends.push({
-        month: date.toLocaleDateString('lt-LT', { month: 'short', year: 'numeric' }),
-        accuracy: monthAccuracy,
-        total: monthTotal,
-        shortages: monthShortages,
-        surpluses: monthSurpluses
-      });
-    }
-    
-    return {
-      totalRecords,
-      accurateRecords,
-      discrepancies,
-      shortages,
-      surpluses,
-      accuracyRate,
-      topProblematicComponents,
-      monthlyTrends
-    };
-  }, [inventoryRecords, componentsInventory]);
 
   // Analitikos skaičiavimai
   const analytics = useMemo(() => {
@@ -578,50 +405,6 @@ const InventoryCycles = () => {
     }
   };
 
-  // Pridėti inventorizacijos įrašą
-  const handleAddRecord = () => {
-    if (!newRecord.componentId || newRecord.actualStock === '') {
-      toast({
-        title: "Klaida",
-        description: "Pasirinkite komponentą ir įveskite tikrą likutį.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const component = componentsInventory.find(c => c.id === newRecord.componentId);
-    if (!component) return;
-
-    const actualStock = parseInt(newRecord.actualStock) || 0;
-    const expectedStock = component.stock;
-    const difference = actualStock - expectedStock;
-
-    const record = {
-      id: Date.now(),
-      componentId: newRecord.componentId,
-      date: new Date().toISOString().split('T')[0],
-      expectedStock,
-      actualStock,
-      difference,
-      notes: newRecord.notes,
-      inspector: newRecord.inspector,
-      week: `W${Math.ceil((new Date().getDate() + new Date().getDay()) / 7).toString().padStart(2, '0')}`
-    };
-
-    setInventoryRecords(prev => [record, ...prev]);
-    setNewRecord({
-      componentId: '',
-      actualStock: '',
-      notes: '',
-      inspector: 'Dabartinis vartotojas'
-    });
-
-    toast({
-      title: "Inventorizacija registruota!",
-      description: `${component.name}: ${difference === 0 ? 'Tikslus' : difference > 0 ? `+${difference}` : difference} vnt.`
-    });
-  };
-
   // Eksportuoti duomenis
   const exportData = () => {
     const data = {
@@ -670,34 +453,6 @@ const InventoryCycles = () => {
       </div>
     );
   }
-
-  // Gauti tendencijos ikoną
-  const getTrendIcon = (errorRate) => {
-    if (errorRate === 0) return <CheckCircle className="h-4 w-4 text-green-500" />;
-    if (errorRate <= 20) return <TrendingUp className="h-4 w-4 text-yellow-500" />;
-    return <TrendingDown className="h-4 w-4 text-red-500" />;
-  };
-
-  // Atnaujinti komponento ciklą
-  const updateComponentCycle = (componentId, cycleMonths) => {
-    setCycleSettings(prev => ({
-      ...prev,
-      customCycles: {
-        ...prev.customCycles,
-        [componentId]: cycleMonths
-      }
-    }));
-  };
-
-  // Perjungti kritinio komponento statusą
-  const toggleCriticalComponent = (componentId) => {
-    setCycleSettings(prev => ({
-      ...prev,
-      criticalComponents: prev.criticalComponents.includes(componentId)
-        ? prev.criticalComponents.filter(id => id !== componentId)
-        : [...prev.criticalComponents, componentId]
-    }));
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 p-4 md:p-8">
