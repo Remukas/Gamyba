@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
@@ -21,7 +22,12 @@ import {
   HelpCircle,
   RefreshCw,
   Target,
-  TrendingUp
+  TrendingUp,
+  Plus,
+  FileText,
+  Award,
+  TrendingDown,
+  Minus
 } from 'lucide-react';
 
 const InventoryCycles = () => {
@@ -33,20 +39,66 @@ const InventoryCycles = () => {
   const [cycleSettings, setCycleSettings] = useState(() => {
     const saved = localStorage.getItem('inventory-cycle-settings');
     return saved ? JSON.parse(saved) : {
-      defaultCycleMonths: 3, // Kas 3 mėnesius
+      defaultCycleMonths: 3,
       startDate: new Date().toISOString().split('T')[0],
-      criticalComponents: [], // Komponentai, kuriems reikia dažnesnės inventorizacijos
-      customCycles: {} // Individualūs ciklai komponentams
+      criticalComponents: [],
+      customCycles: {}
     };
   });
 
-  // Inventorizacijos įrašai
+  // Inventorizacijos įrašai su neatitikimais
   const [inventoryRecords, setInventoryRecords] = useState(() => {
     const saved = localStorage.getItem('inventory-records');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Demo duomenys
+    return [
+      {
+        id: 1,
+        componentId: 'comp-1',
+        date: '2024-01-15',
+        expectedStock: 50,
+        actualStock: 47,
+        difference: -3,
+        notes: 'Trūksta 3 vnt. - galimas vagystės atvejis',
+        inspector: 'Jonas Petraitis',
+        week: 'W03'
+      },
+      {
+        id: 2,
+        componentId: 'comp-2',
+        date: '2024-01-10',
+        expectedStock: 40,
+        actualStock: 42,
+        difference: 2,
+        notes: 'Rasta 2 papildomi vienetai sandėlyje',
+        inspector: 'Marija Kazlauskienė',
+        week: 'W02'
+      },
+      {
+        id: 3,
+        componentId: 'comp-3',
+        date: '2024-01-08',
+        expectedStock: 100,
+        actualStock: 100,
+        difference: 0,
+        notes: 'Tikslus skaičius',
+        inspector: 'Petras Jonaitis',
+        week: 'W02'
+      }
+    ];
   });
 
-  // Išsaugoti nustatymus
+  // Naujo įrašo forma
+  const [newRecord, setNewRecord] = useState({
+    componentId: '',
+    actualStock: '',
+    notes: '',
+    inspector: 'Dabartinis vartotojas'
+  });
+
+  // Išsaugoti duomenis
   useEffect(() => {
     localStorage.setItem('inventory-cycle-settings', JSON.stringify(cycleSettings));
   }, [cycleSettings]);
@@ -61,7 +113,6 @@ const InventoryCycles = () => {
     const startDate = new Date(cycleSettings.startDate);
     const currentYear = startDate.getFullYear();
     
-    // Generuoti 52 savaites
     for (let week = 1; week <= 52; week++) {
       const weekStart = new Date(currentYear, 0, 1 + (week - 1) * 7);
       const weekEnd = new Date(weekStart);
@@ -73,9 +124,8 @@ const InventoryCycles = () => {
         const customCycle = cycleSettings.customCycles[component.id];
         const cycleMonths = customCycle || cycleSettings.defaultCycleMonths;
         
-        // Apskaičiuoti, ar šią savaitę reikia inventorizuoti šį komponentą
         const componentStartWeek = (component.id.charCodeAt(component.id.length - 1) % 52) + 1;
-        const cycleWeeks = Math.round(cycleMonths * 4.33); // ~4.33 savaitės per mėnesį
+        const cycleWeeks = Math.round(cycleMonths * 4.33);
         
         if ((week - componentStartWeek) % cycleWeeks === 0 && week >= componentStartWeek) {
           weekComponents.push({
@@ -97,6 +147,103 @@ const InventoryCycles = () => {
     
     return schedule;
   }, [componentsInventory, cycleSettings]);
+
+  // Analitikos skaičiavimai
+  const analytics = useMemo(() => {
+    const totalRecords = inventoryRecords.length;
+    const accurateRecords = inventoryRecords.filter(r => r.difference === 0).length;
+    const discrepancies = inventoryRecords.filter(r => r.difference !== 0).length;
+    const shortages = inventoryRecords.filter(r => r.difference < 0).length;
+    const surpluses = inventoryRecords.filter(r => r.difference > 0).length;
+    
+    const accuracyRate = totalRecords > 0 ? Math.round((accurateRecords / totalRecords) * 100) : 0;
+    
+    // Probleminiai komponentai
+    const componentIssues = {};
+    inventoryRecords.forEach(record => {
+      if (record.difference !== 0) {
+        if (!componentIssues[record.componentId]) {
+          componentIssues[record.componentId] = {
+            componentId: record.componentId,
+            totalChecks: 0,
+            discrepancies: 0,
+            totalDifference: 0,
+            lastCheck: record.date
+          };
+        }
+        componentIssues[record.componentId].discrepancies++;
+        componentIssues[record.componentId].totalDifference += Math.abs(record.difference);
+      }
+    });
+
+    // Visų komponentų statistika
+    inventoryRecords.forEach(record => {
+      if (!componentIssues[record.componentId]) {
+        componentIssues[record.componentId] = {
+          componentId: record.componentId,
+          totalChecks: 0,
+          discrepancies: 0,
+          totalDifference: 0,
+          lastCheck: record.date
+        };
+      }
+      componentIssues[record.componentId].totalChecks++;
+    });
+
+    const topProblematicComponents = Object.values(componentIssues)
+      .map(issue => {
+        const component = componentsInventory.find(c => c.id === issue.componentId);
+        const errorRate = issue.totalChecks > 0 ? Math.round((issue.discrepancies / issue.totalChecks) * 100) : 0;
+        
+        return {
+          ...issue,
+          componentName: component?.name || 'Nežinomas komponentas',
+          errorRate,
+          avgDifference: issue.discrepancies > 0 ? Math.round(issue.totalDifference / issue.discrepancies) : 0
+        };
+      })
+      .sort((a, b) => b.errorRate - a.errorRate)
+      .slice(0, 10);
+
+    // Mėnesinės tendencijos
+    const monthlyTrends = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      const monthRecords = inventoryRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getFullYear() === date.getFullYear() && 
+               recordDate.getMonth() === date.getMonth();
+      });
+      
+      const monthAccurate = monthRecords.filter(r => r.difference === 0).length;
+      const monthTotal = monthRecords.length;
+      const monthAccuracy = monthTotal > 0 ? Math.round((monthAccurate / monthTotal) * 100) : 0;
+      const monthShortages = monthRecords.filter(r => r.difference < 0).length;
+      const monthSurpluses = monthRecords.filter(r => r.difference > 0).length;
+      
+      monthlyTrends.push({
+        month: date.toLocaleDateString('lt-LT', { month: 'short', year: 'numeric' }),
+        accuracy: monthAccuracy,
+        total: monthTotal,
+        shortages: monthShortages,
+        surpluses: monthSurpluses
+      });
+    }
+    
+    return {
+      totalRecords,
+      accurateRecords,
+      discrepancies,
+      shortages,
+      surpluses,
+      accuracyRate,
+      topProblematicComponents,
+      monthlyTrends
+    };
+  }, [inventoryRecords, componentsInventory]);
 
   // Statistikos
   const cycleStats = useMemo(() => {
@@ -127,6 +274,50 @@ const InventoryCycles = () => {
     };
   }, [componentsInventory, cycleSettings, inventoryRecords, yearlySchedule]);
 
+  // Pridėti inventorizacijos įrašą
+  const handleAddRecord = () => {
+    if (!newRecord.componentId || newRecord.actualStock === '') {
+      toast({
+        title: "Klaida",
+        description: "Pasirinkite komponentą ir įveskite tikrą likutį.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const component = componentsInventory.find(c => c.id === newRecord.componentId);
+    if (!component) return;
+
+    const actualStock = parseInt(newRecord.actualStock) || 0;
+    const expectedStock = component.stock;
+    const difference = actualStock - expectedStock;
+
+    const record = {
+      id: Date.now(),
+      componentId: newRecord.componentId,
+      date: new Date().toISOString().split('T')[0],
+      expectedStock,
+      actualStock,
+      difference,
+      notes: newRecord.notes,
+      inspector: newRecord.inspector,
+      week: `W${Math.ceil((new Date().getDate() + new Date().getDay()) / 7).toString().padStart(2, '0')}`
+    };
+
+    setInventoryRecords(prev => [record, ...prev]);
+    setNewRecord({
+      componentId: '',
+      actualStock: '',
+      notes: '',
+      inspector: 'Dabartinis vartotojas'
+    });
+
+    toast({
+      title: "Inventorizacija užregistruota!",
+      description: `${component.name}: ${difference === 0 ? 'tikslus skaičius' : difference > 0 ? `+${difference} perteklius` : `${difference} trūkumas`}`
+    });
+  };
+
   // Atnaujinti komponento ciklą
   const updateComponentCycle = (componentId, months) => {
     setCycleSettings(prev => ({
@@ -148,31 +339,13 @@ const InventoryCycles = () => {
     }));
   };
 
-  // Užregistruoti inventorizaciją
-  const recordInventory = (componentId, actualStock, notes = '') => {
-    const record = {
-      id: Date.now(),
-      componentId,
-      date: new Date().toISOString().split('T')[0],
-      actualStock,
-      notes,
-      inspector: 'Dabartinis vartotojas' // Galima pakeisti į tikrą vartotoją
-    };
-    
-    setInventoryRecords(prev => [record, ...prev]);
-    
-    toast({
-      title: "Inventorizacija užregistruota!",
-      description: `Komponento inventorizacija sėkmingai įrašyta.`
-    });
-  };
-
-  // Eksportuoti grafiką
-  const exportSchedule = () => {
+  // Eksportuoti duomenis
+  const exportData = () => {
     const data = {
       schedule: yearlySchedule,
       settings: cycleSettings,
-      stats: cycleStats,
+      records: inventoryRecords,
+      analytics: analytics,
       exportDate: new Date().toISOString()
     };
     
@@ -180,12 +353,12 @@ const InventoryCycles = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `inventory-schedule-${new Date().getFullYear()}.json`;
+    a.download = `inventory-analytics-${new Date().getFullYear()}.json`;
     a.click();
     
     toast({
-      title: "Grafikas eksportuotas",
-      description: "Inventorizacijos grafikas sėkmingai eksportuotas."
+      title: "Duomenys eksportuoti",
+      description: "Inventorizacijos duomenys ir analitika eksportuoti."
     });
   };
 
@@ -195,6 +368,13 @@ const InventoryCycles = () => {
     if (totalComponents <= 2) return 'bg-green-100 border-green-300';
     if (totalComponents <= 5) return 'bg-yellow-100 border-yellow-300';
     return 'bg-red-100 border-red-300';
+  };
+
+  // Gauti tendencijos ikoną
+  const getTrendIcon = (errorRate) => {
+    if (errorRate === 0) return <CheckCircle className="h-4 w-4 text-green-500" />;
+    if (errorRate <= 20) return <TrendingUp className="h-4 w-4 text-yellow-500" />;
+    return <TrendingDown className="h-4 w-4 text-red-500" />;
   };
 
   return (
@@ -210,7 +390,7 @@ const InventoryCycles = () => {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
               📅 Inventorizacijos Ciklai
             </h1>
-            <p className="text-gray-600 text-lg">Automatinis komponentų inventorizacijos planavimas</p>
+            <p className="text-gray-600 text-lg">Automatinis komponentų inventorizacijos planavimas ir analitika</p>
           </div>
           <div className="flex gap-3 mt-4 md:mt-0">
             <Button
@@ -222,7 +402,7 @@ const InventoryCycles = () => {
               Pagalba
             </Button>
             <Button
-              onClick={exportSchedule}
+              onClick={exportData}
               className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
             >
               <Download className="h-4 w-4 mr-2" />
@@ -294,10 +474,10 @@ const InventoryCycles = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm">Vid./Savaitė</p>
-                    <p className="text-3xl font-bold">{cycleStats.averagePerWeek}</p>
+                    <p className="text-purple-100 text-sm">Tikslumas</p>
+                    <p className="text-3xl font-bold">{analytics.accuracyRate}%</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-purple-200" />
+                  <Award className="h-8 w-8 text-purple-200" />
                 </div>
               </CardContent>
             </Card>
@@ -324,20 +504,21 @@ const InventoryCycles = () => {
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-green-600">Nustatymai:</h4>
+                  <h4 className="font-semibold text-green-600">Inventorizacijos Registravimas:</h4>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Numatytasis ciklas - kas kiek mėnesių tikrinti</li>
-                    <li>Pradžios data - nuo kada pradėti skaičiuoti</li>
-                    <li>Kritiniai komponentai - dažnesnė inventorizacija</li>
-                    <li>Individualūs ciklai - skirtingi terminai komponentams</li>
+                    <li>Pasirinkite komponentą iš sąrašo</li>
+                    <li>Įveskite tikrą suskaičiuotą kiekį</li>
+                    <li>Sistema automatiškai apskaičiuos skirtumą</li>
+                    <li>Pridėkite pastabas apie neatitikimus</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-purple-600">Grafikas:</h4>
+                  <h4 className="font-semibold text-purple-600">Analitikos Grafikai:</h4>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>52 savaitės per metus</li>
-                    <li>Kiekviena savaitė rodo komponentų skaičių</li>
-                    <li>Galima matyti apkrovą ir planuoti darbuotojus</li>
+                    <li>Tikslumas % - kiek inventorizacijų buvo tikslios</li>
+                    <li>Top probleminiai komponentai - dažniausiai klysta</li>
+                    <li>Mėnesinės tendencijos - ar gerėja tikslumas</li>
+                    <li>Trūkumų vs perteklių analizė</li>
                   </ul>
                 </div>
               </div>
@@ -349,18 +530,22 @@ const InventoryCycles = () => {
         )}
 
         <Tabs defaultValue="schedule" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
             <TabsTrigger value="schedule" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Grafikas
             </TabsTrigger>
+            <TabsTrigger value="register" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Registruoti
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analitika
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Nustatymai
-            </TabsTrigger>
-            <TabsTrigger value="records" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Įrašai
             </TabsTrigger>
           </TabsList>
 
@@ -419,6 +604,295 @@ const InventoryCycles = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Inventorizacijos Registravimas */}
+          <TabsContent value="register">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="h-5 w-5 text-green-600" />
+                    Registruoti Inventorizaciją
+                  </CardTitle>
+                  <CardDescription>Įrašykite faktinį komponentų kiekį ir neatitikimus</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="componentSelect">Komponentas *</Label>
+                    <Select value={newRecord.componentId} onValueChange={(value) => setNewRecord({...newRecord, componentId: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pasirinkite komponentą..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {componentsInventory.map(component => (
+                          <SelectItem key={component.id} value={component.id}>
+                            {component.name} (Sistemoje: {component.stock} vnt.)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {newRecord.componentId && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="text-sm">
+                        <strong>Sistemoje:</strong> {componentsInventory.find(c => c.id === newRecord.componentId)?.stock || 0} vnt.
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="actualStock">Tikras likutis *</Label>
+                    <Input
+                      id="actualStock"
+                      type="number"
+                      min="0"
+                      value={newRecord.actualStock}
+                      onChange={(e) => setNewRecord({...newRecord, actualStock: e.target.value})}
+                      placeholder="Suskaičiuotas kiekis"
+                    />
+                  </div>
+
+                  {newRecord.componentId && newRecord.actualStock && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-sm">
+                        <strong>Skirtumas:</strong> 
+                        <span className={`ml-2 font-bold ${
+                          parseInt(newRecord.actualStock) - (componentsInventory.find(c => c.id === newRecord.componentId)?.stock || 0) === 0 
+                            ? 'text-green-600' 
+                            : parseInt(newRecord.actualStock) - (componentsInventory.find(c => c.id === newRecord.componentId)?.stock || 0) > 0 
+                              ? 'text-blue-600' 
+                              : 'text-red-600'
+                        }`}>
+                          {parseInt(newRecord.actualStock) - (componentsInventory.find(c => c.id === newRecord.componentId)?.stock || 0) > 0 && '+'}
+                          {parseInt(newRecord.actualStock) - (componentsInventory.find(c => c.id === newRecord.componentId)?.stock || 0)} vnt.
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label htmlFor="inspector">Inspektorius</Label>
+                    <Input
+                      id="inspector"
+                      value={newRecord.inspector}
+                      onChange={(e) => setNewRecord({...newRecord, inspector: e.target.value})}
+                      placeholder="Vardas Pavardė"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Pastabos</Label>
+                    <Textarea
+                      id="notes"
+                      value={newRecord.notes}
+                      onChange={(e) => setNewRecord({...newRecord, notes: e.target.value})}
+                      placeholder="Neatitikimų priežastys, pastebėjimai..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <Button onClick={handleAddRecord} className="w-full bg-gradient-to-r from-green-600 to-green-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Registruoti Inventorizaciją
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Paskutiniai įrašai */}
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    Paskutiniai Įrašai
+                  </CardTitle>
+                  <CardDescription>Neseniai atliktos inventorizacijos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {inventoryRecords.slice(0, 10).map(record => {
+                      const component = componentsInventory.find(c => c.id === record.componentId);
+                      return (
+                        <div key={record.id} className="p-3 border rounded-lg bg-gray-50">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <h4 className="font-semibold text-sm">{component?.name || 'Nežinomas'}</h4>
+                              <p className="text-xs text-gray-600">{record.inspector} • {record.date}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge className={`${
+                                record.difference === 0 ? 'bg-green-100 text-green-800' :
+                                record.difference > 0 ? 'bg-blue-100 text-blue-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {record.difference === 0 ? 'Tikslus' : 
+                                 record.difference > 0 ? `+${record.difference}` : 
+                                 record.difference}
+                              </Badge>
+                            </div>
+                          </div>
+                          {record.notes && (
+                            <p className="text-xs text-gray-600 bg-white p-2 rounded">
+                              {record.notes}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Analitikos Grafikai */}
+          <TabsContent value="analytics">
+            <div className="space-y-8">
+              {/* Analitikos statistikos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100 text-sm">Tikslumas</p>
+                        <p className="text-3xl font-bold">{analytics.accuracyRate}%</p>
+                      </div>
+                      <Award className="h-8 w-8 text-green-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white border-0 shadow-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-red-100 text-sm">Neatitikimai</p>
+                        <p className="text-3xl font-bold">{analytics.discrepancies}</p>
+                      </div>
+                      <AlertTriangle className="h-8 w-8 text-red-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm">Trūkumai</p>
+                        <p className="text-3xl font-bold">{analytics.shortages}</p>
+                      </div>
+                      <Minus className="h-8 w-8 text-orange-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm">Pertekliai</p>
+                        <p className="text-3xl font-bold">{analytics.surpluses}</p>
+                      </div>
+                      <Plus className="h-8 w-8 text-blue-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Top Probleminiai Komponentai */}
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-red-600" />
+                    Top Probleminiai Komponentai
+                  </CardTitle>
+                  <CardDescription>Komponentai su dažniausiais neatitikimais</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analytics.topProblematicComponents.length > 0 ? (
+                      analytics.topProblematicComponents.map((comp, index) => (
+                        <div key={comp.componentId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">{comp.componentName}</h4>
+                              <p className="text-sm text-gray-600">
+                                {comp.discrepancies}/{comp.totalChecks} neatitikimų • 
+                                Vid. skirtumas: {comp.avgDifference} vnt.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {getTrendIcon(comp.errorRate)}
+                            <Badge className={`${
+                              comp.errorRate === 0 ? 'bg-green-100 text-green-800' :
+                              comp.errorRate <= 20 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {comp.errorRate}% klaidų
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-300" />
+                        <p>Nėra probleminių komponentų!</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Mėnesinės Tendencijos */}
+              <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-purple-600" />
+                    Mėnesinės Tendencijos
+                  </CardTitle>
+                  <CardDescription>Inventorizacijos tikslumo kitimas per 6 mėnesius</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                    {analytics.monthlyTrends.map((month, index) => (
+                      <div key={index} className="text-center">
+                        <div className="mb-2">
+                          <div className="text-sm font-medium text-gray-700">{month.month}</div>
+                          <div className="text-2xl font-bold text-purple-600">{month.accuracy}%</div>
+                        </div>
+                        
+                        {/* Vizualus stulpelis */}
+                        <div className="relative h-32 bg-gray-200 rounded-lg overflow-hidden">
+                          <div 
+                            className="absolute bottom-0 w-full bg-gradient-to-t from-purple-500 to-purple-400 transition-all duration-500"
+                            style={{ height: `${month.accuracy}%` }}
+                          ></div>
+                          <div className="absolute inset-0 flex flex-col justify-end p-2 text-xs text-white">
+                            <div>✓ {month.total}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-2 text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-red-600">Trūk:</span>
+                            <span className="font-bold">{month.shortages}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-blue-600">Pert:</span>
+                            <span className="font-bold">{month.surpluses}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Nustatymai */}
@@ -488,6 +962,7 @@ const InventoryCycles = () => {
                     {componentsInventory.map(component => {
                       const isCritical = cycleSettings.criticalComponents.includes(component.id);
                       const customCycle = cycleSettings.customCycles[component.id];
+                      const componentStats = analytics.topProblematicComponents.find(c => c.componentId === component.id);
                       
                       return (
                         <div key={component.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -495,6 +970,11 @@ const InventoryCycles = () => {
                             <div className="font-medium">{component.name}</div>
                             <div className="text-sm text-gray-600">
                               Likutis: {component.stock} vnt. • Gavimas: {component.leadTimeDays}d
+                              {componentStats && (
+                                <span className="text-red-600 ml-2">
+                                  • {componentStats.errorRate}% klaidų
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -528,54 +1008,6 @@ const InventoryCycles = () => {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          {/* Inventorizacijos Įrašai */}
-          <TabsContent value="records">
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-green-600" />
-                  Inventorizacijos Įrašai
-                </CardTitle>
-                <CardDescription>Visi atlikti inventorizacijos patikrinimai</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {inventoryRecords.length > 0 ? (
-                    inventoryRecords.map(record => {
-                      const component = componentsInventory.find(c => c.id === record.componentId);
-                      return (
-                        <div key={record.id} className="p-4 border rounded-lg bg-gray-50">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <h3 className="font-semibold">{component?.name || 'Nežinomas komponentas'}</h3>
-                              <p className="text-sm text-gray-600">Inspektorius: {record.inspector}</p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm text-gray-600">{record.date}</div>
-                              <Badge className="bg-blue-100 text-blue-800">
-                                {record.actualStock} vnt.
-                              </Badge>
-                            </div>
-                          </div>
-                          {record.notes && (
-                            <div className="bg-blue-50 p-2 rounded text-sm text-blue-800">
-                              {record.notes}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                      <p>Inventorizacijos įrašų nėra</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </motion.div>
