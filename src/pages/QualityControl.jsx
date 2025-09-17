@@ -215,6 +215,48 @@ const QualityControl = () => {
           </motion.div>
         </div>
 
+        {/* Tutorial Dialog */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-semibold mb-4">🛡️ Kokybės Kontrolės Instrukcijos</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-blue-600">Kaip Pridėti Patikrinimą:</h4>
+                  <ol className="list-decimal list-inside mt-2 space-y-1">
+                    <li>Įveskite produkto pavadinimą</li>
+                    <li>Nurodykite inspektorių</li>
+                    <li>Pasirinkite statusą (Laukiama/Praėjo/Nepraėjo)</li>
+                    <li>Įvertinkite balais (0-100)</li>
+                    <li>Jei reikia, įrašykite defektus</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-600">Statistikos Rodikliai:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Viso Patikrinimų - bendras skaičius</li>
+                    <li>Praėjo - sėkmingai praėję patikrinimus</li>
+                    <li>Nepraėjo - nepraėję kokybės kontrolės</li>
+                    <li>Išlaikymo % - kokybės išlaikymo procentas</li>
+                    <li>Vidutinis Balas - bendras kokybės įvertinimas</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-orange-600">Defektų Valdymas:</h4>
+                  <p>Defektus atskirite kableliais. Pvz: "Paviršiaus defektai, Matmenų neatitikimas"</p>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setShowTutorial(false)}>Supratau</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Add New Quality Check */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
