@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,17 +26,17 @@ const InventoryCycles = () => {
   const { toast } = useToast();
   
   // State
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = React.useState({
     defaultCycleMonths: 3,
     startDate: new Date().toISOString().split('T')[0]
   });
-  const [inventoryRecords, setInventoryRecords] = useState([]);
-  const [selectedWeek, setSelectedWeek] = useState(null);
-  const [showWeekDialog, setShowWeekDialog] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [inspector, setInspector] = useState('');
-  const [notes, setNotes] = useState('');
+  const [inventoryRecords, setInventoryRecords] = React.useState([]);
+  const [selectedWeek, setSelectedWeek] = React.useState(null);
+  const [showWeekDialog, setShowWeekDialog] = React.useState(false);
+  const [showTutorial, setShowTutorial] = React.useState(false);
+  const [uploadedFile, setUploadedFile] = React.useState(null);
+  const [inspector, setInspector] = React.useState('');
+  const [notes, setNotes] = React.useState('');
 
   const getCurrentWeek = () => {
     const now = new Date();
@@ -47,7 +47,7 @@ const InventoryCycles = () => {
   };
 
   // Generate weeks for current year
-  const weeks = useMemo(() => {
+  const weeks = React.useMemo(() => {
     const currentYear = new Date().getFullYear();
     const weeks = [];
     const currentWeek = getCurrentWeek();
@@ -208,7 +208,7 @@ const InventoryCycles = () => {
     }
   };
 
-  const stats = useMemo(() => {
+  const stats = React.useMemo(() => {
     const completedWeeks = weeks.filter(w => w.isCompleted).length;
     const overdueWeeks = weeks.filter(w => w.isOverdue).length;
     const totalDiscrepancies = inventoryRecords.reduce((sum, record) => sum + Math.abs(record.difference), 0);
