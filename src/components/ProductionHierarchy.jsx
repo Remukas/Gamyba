@@ -60,14 +60,7 @@ const ProductionHierarchy = () => {
   const [showStatusManager, setShowStatusManager] = useState(false);
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [showExcelUpdate, setShowExcelUpdate] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [messages, setMessages] = useState([
-    { sender: 'ai', text: 'Sveiki! Aš esu jūsų gamybos strategas. Galite klausti apie komponentus, subasemblius, atsargas ar gamybos planavimą. Pvz: "Kokios mano atsargos?" arba "Kas įeina į Cart SA-10000170?"' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isThinking, setIsThinking] = useState(false);
-  const messagesEndRef = useRef(null);
   
   // Connection state
   const [isConnecting, setIsConnecting] = useState(false);
@@ -81,7 +74,7 @@ const ProductionHierarchy = () => {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   
-  // Default statuses
+  // Default statuses - pašalinu isLocked state
   const [statuses, setStatuses] = useState([
     { id: 'pending', name: 'Laukiama', color: '#f97316' },
     { id: 'in_progress', name: 'Vykdoma', color: '#3b82f6' },
@@ -122,17 +115,6 @@ const ProductionHierarchy = () => {
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(prev => !prev);
   }, []);
-
-  const toggleLock = useCallback(() => {
-    setIsLocked(prev => {
-      const newLocked = !prev;
-      toast({
-        title: newLocked ? "Subasembliai užrakinti" : "Subasembliai atrakinti",
-        description: newLocked ? "Dabar negalite stumdyti subasemblių" : "Dabar galite laisvai stumdyti subasemblius"
-      });
-      return newLocked;
-    });
-  }, [toast]);
 
   const handleZoomIn = useCallback(() => {
     setZoom(prev => Math.min(prev * 1.2, 3));
@@ -367,47 +349,6 @@ const ProductionHierarchy = () => {
     });
   }, [subassemblies, setSubassemblies, toast]);
 
-  // AI Chat Functions
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = () => {
-    if (input.trim() === '') return;
-
-    const newMessages = [...messages, { sender: 'user', text: input }];
-    setMessages(newMessages);
-    setInput('');
-    setIsThinking(true);
-
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(input);
-      setMessages(prev => [...prev, aiResponse]);
-      setIsThinking(false);
-    }, 1500);
-  };
-
-  const generateAIResponse = (userInput) => {
-    const lowerInput = userInput.toLowerCase();
-
-    // Atsargų analizė
-    if (lowerInput.includes('atsargos') || lowerInput.includes('likučiai') || lowerInput.includes('komponentai')) {
-      const lowStockComponents = componentsInventory.filter(c => c.stock < 10);
-      return {
-        sender: 'ai',
-        text: `Analizuoju jūsų atsargas. Turite ${componentsInventory.length} komponentų tipų. ${lowStockComponents.length > 0 ? `Dėmesio: ${lowStockComponents.length} komponentų turi mažas atsargas!` : 'Visų komponentų atsargos pakankamos.'}`,
-        inventoryAnalysis: {
-          lowStockComponents: lowStockComponents.map(c => ({ name: c.name, stock: c.stock, leadTime: c.leadTimeDays }))
-        }
-      };
-    }
-
-    // Sudėties užklausa
-    if (lowerInput.includes('kas įeina') || lowerInput.includes('sudėtis')) {
       const targetName = lowerInput.replace(/kas įeina į|sudėtis/g, '').trim();
       const targetNode = Object.values(subassemblies).flat().find(sa => 
         sa.name.toLowerCase().includes(targetName)
