@@ -329,7 +329,7 @@ const ProductionHierarchy = () => {
       {/* Sidebar Toggle Button */}
       <Button
         onClick={toggleSidebar}
-        className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50 bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg border-0"
+        className="fixed left-4 top-4 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full"
         size="icon"
       >
         {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
