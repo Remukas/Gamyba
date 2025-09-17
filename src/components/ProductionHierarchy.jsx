@@ -422,10 +422,10 @@ const ProductionHierarchy = () => {
                 <Button size="sm" onClick={() => setShowAddDialog(true)}>
                   Pridėti subasemblį
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowExcelImport(true)}>
+                <Button size="sm" variant="outline" onClick={() => setShowExcelImport(true)} className="whitespace-nowrap">
                   Importuoti
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowExcelUpdate(true)}>
+                <Button size="sm" variant="outline" onClick={() => setShowExcelUpdate(true)} className="whitespace-nowrap min-w-[120px]">
                   Atnaujinti likučius
                 </Button>
               </div>
@@ -437,7 +437,7 @@ const ProductionHierarchy = () => {
       {/* Sidebar Toggle Button - Always Visible */}
       <Button
         onClick={toggleSidebar}
-        className={`fixed top-1/2 -translate-y-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-10 h-16 p-0 transition-all duration-300 flex items-center justify-center ${
+        className={`fixed bottom-20 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-12 h-12 p-0 transition-all duration-300 flex items-center justify-center ${
           isSidebarCollapsed ? 'left-0' : 'left-80'
         }`}
         size="sm"
@@ -451,7 +451,7 @@ const ProductionHierarchy = () => {
         <div className="absolute top-4 right-4 z-40 flex gap-2">
           <Button
             onClick={toggleLock}
-            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-4 py-2 h-auto min-w-[120px]`}
+            className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-6 py-3 h-auto min-w-[140px] whitespace-nowrap`}
           >
             {isLocked ? <Lock className="h-4 w-4 mr-2" /> : <Unlock className="h-4 w-4 mr-2" />}
             {isLocked ? 'Užrakinta' : 'Atrakinta'}
@@ -460,7 +460,7 @@ const ProductionHierarchy = () => {
           <Button
             onClick={() => setShowTutorial(true)}
             variant="outline"
-            className="bg-white/80 backdrop-blur-sm hover:bg-white px-4 py-2 h-auto min-w-[100px]"
+            className="bg-white/80 backdrop-blur-sm hover:bg-white px-6 py-3 h-auto min-w-[120px] whitespace-nowrap"
           >
             <HelpCircle className="h-4 w-4 mr-2" />
             Pagalba
@@ -468,7 +468,7 @@ const ProductionHierarchy = () => {
 
           <Button
             onClick={() => setShowAIAssistant(true)}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-4 py-2 h-auto min-w-[140px]"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg px-6 py-3 h-auto min-w-[160px] whitespace-nowrap"
           >
             <Bot className="h-4 w-4 mr-2" />
             AI Asistentas
@@ -516,7 +516,7 @@ const ProductionHierarchy = () => {
         
         {/* Lock Status Indicator */}
         {isLocked && (
-          <div className={`fixed ${isSidebarCollapsed ? 'left-4' : 'left-[316px]'} bottom-32 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50`}>
+          <div className={`fixed ${isSidebarCollapsed ? 'left-4' : 'left-[316px]'} bottom-36 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50`}>
             🔒 Subasembliai užrakinti
           </div>
         )}
