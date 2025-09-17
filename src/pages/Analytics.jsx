@@ -30,6 +30,12 @@ const Analytics = () => {
     const totalInventoryValue = componentsInventory.reduce((sum, c) => sum + (c.stock * 10), 0);
     const averageLeadTime = componentsInventory.reduce((sum, c) => sum + c.leadTimeDays, 0) / totalComponents || 0;
     
+    // OEE calculations
+    const availability = Math.min(95, 80 + (completedSubassemblies / Math.max(totalSubassemblies, 1)) * 15);
+    const performance = Math.min(98, 75 + (totalComponents / Math.max(lowStockComponents + 1, 1)) * 2);
+    const qualityRate = Math.min(99, 85 + (completedSubassemblies / Math.max(totalSubassemblies, 1)) * 14);
+    const oee = (availability * performance * qualityRate) / 10000;
+    
     return {
       totalComponents,
       lowStockComponents,
@@ -37,7 +43,11 @@ const Analytics = () => {
       completedSubassemblies,
       totalInventoryValue,
       averageLeadTime: Math.round(averageLeadTime),
-      completionRate: totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0
+      completionRate: totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0,
+      oee: Math.round(oee),
+      availability: Math.round(availability),
+      performance: Math.round(performance),
+      qualityRate: Math.round(qualityRate)
     };
   }, [componentsInventory, subassemblies]);
 
@@ -144,6 +154,65 @@ const Analytics = () => {
                     <p className="text-3xl font-bold">€{analytics.totalInventoryValue.toLocaleString()}</p>
                   </div>
                   <DollarSign className="h-8 w-8 text-purple-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* OEE Metrics */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-indigo-100 text-sm font-medium">OEE Rodiklis</p>
+                    <p className="text-3xl font-bold">{analytics.oee}%</p>
+                  </div>
+                  <TrendingUp className="h-8 w-8 text-indigo-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+            <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-cyan-100 text-sm font-medium">Prieinamumas</p>
+                    <p className="text-3xl font-bold">{analytics.availability}%</p>
+                  </div>
+                  <Clock className="h-8 w-8 text-cyan-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
+            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm font-medium">Našumas</p>
+                    <p className="text-3xl font-bold">{analytics.performance}%</p>
+                  </div>
+                  <Target className="h-8 w-8 text-amber-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8 }}>
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-medium">Kokybė</p>
+                    <p className="text-3xl font-bold">{analytics.qualityRate}%</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
