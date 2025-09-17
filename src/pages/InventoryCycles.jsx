@@ -1132,13 +1132,27 @@ const InventoryCycles = () => {
                       const isCritical = cycleSettings.criticalComponents.includes(component.id);
                       const customCycle = cycleSettings.customCycles[component.id];
                       const componentStats = analytics.topProblematicComponents.find(c => c.componentId === component.id);
+                      const lastInventory = getLastInventoryDate(component.id);
+                      const isNew = !lastInventory;
+                      const isOverdue = overdueComponents.some(oc => oc.id === component.id);
                       
                       return (
-                        <div key={component.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div key={component.id} className={`flex items-center justify-between p-3 rounded-lg ${
+                          isNew ? 'bg-amber-50 border border-amber-200' :
+                          isOverdue ? 'bg-red-50 border border-red-200' :
+                          'bg-gray-50'
+                        }`}>
                           <div className="flex-1">
-                            <div className="font-medium">{component.name}</div>
+                            <div className="font-medium flex items-center gap-2">
+                              {component.name}
+                              {isNew && <Badge className="bg-amber-100 text-amber-800 text-xs">NAUJAS</Badge>}
+                              {isOverdue && <Badge className="bg-red-100 text-red-800 text-xs">VĖLUOJA</Badge>}
+                            </div>
                             <div className="text-sm text-gray-600">
                               Likutis: {component.stock} vnt. • Gavimas: {component.leadTimeDays}d
+                              {lastInventory && (
+                                <span className="ml-2">• Pask. inv.: {lastInventory}</span>
+                              )}
                               {componentStats && (
                                 <span className="text-red-600 ml-2">
                                   • {componentStats.errorRate}% klaidų
