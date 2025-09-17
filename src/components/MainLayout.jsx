@@ -13,7 +13,8 @@ import {
   User,
   Menu,
   X,
-  Bot
+  Bot,
+  RefreshCw
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,14 @@ const MainLayout = () => {
       label: "Priežiūros Grafikas",
       color: "text-orange-600",
       bgColor: "bg-orange-100",
+      permission: "view_analytics"
+    },
+    {
+      to: "/inventory-cycles",
+      icon: RefreshCw,
+      label: "Inventorizacijos Ciklai",
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
       permission: "view_analytics"
     }
   ];

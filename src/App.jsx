@@ -14,6 +14,7 @@ import QualityControl from '@/pages/QualityControl';
 import MaintenanceSchedule from '@/pages/MaintenanceSchedule';
 import AdminPanel from '@/pages/AdminPanel';
 import AIChat from '@/pages/AIChat';
+import InventoryCycles from '@/pages/InventoryCycles';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 const AppContent = () => {
@@ -84,6 +85,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute requiredPermission="view_analytics">
                 <MaintenanceSchedule />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="inventory-cycles" 
+            element={
+              <ProtectedRoute requiredPermission="view_analytics">
+                <InventoryCycles />
               </ProtectedRoute>
             } 
           />
