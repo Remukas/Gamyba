@@ -27,6 +27,7 @@ import StatusManager from '@/components/StatusManager';
 import ExcelImportDialog from '@/components/ExcelImportDialog';
 import ExcelUpdateDialog from '@/components/ExcelUpdateDialog';
 import AIAssistant from '@/components/AIAssistant';
+import { ZoomIn, ZoomOut, RotateCcw, Maximize } from 'lucide-react';
 import Xarrow from 'react-xarrows';
 
 const ProductionHierarchy = () => {
@@ -100,6 +101,25 @@ const ProductionHierarchy = () => {
       return newLocked;
     });
   }, [toast]);
+
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(prev * 1.2, 3));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(prev / 1.2, 0.3));
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  const handleFitToScreen = useCallback(() => {
+    // Automatiškai pritaikyti zoom pagal turinį
+    setZoom(0.8);
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   const handleSubassemblyClick = useCallback((subassembly) => {
     if (isConnecting) {
@@ -175,6 +195,54 @@ const ProductionHierarchy = () => {
     });
   }, [selectedCategory, subassemblies, setSubassemblies, toast]);
 
+  const handleImportSubassemblyWithComponents = useCallback((data) => {
+    const newSubassembly = {
+      id: `${selectedCategory}-${Date.now()}`,
+      name: data.name,
+      quantity: 0,
+      targetQuantity: 1,
+      status: 'pending',
+      position: { 
+        x: 200 + Math.random() * 300, 
+        y: 150 + Math.random() * 200 
+      },
+      children: [],
+      components: data.components || [],
+      category: selectedCategory,
+      comments: []
+    };
+
+    const updatedSubassemblies = {
+      ...subassemblies,
+      [selectedCategory]: [...(subassemblies[selectedCategory] || []), newSubassembly]
+    };
+
+    setSubassemblies(updatedSubassemblies);
+    toast({
+      title: "Subasemblis importuotas!",
+      description: `"${data.name}" sėkmingai importuotas su komponentais`
+    });
+  }, [selectedCategory, subassemblies, setSubassemblies, toast]);
+
+  const handleExcelUpdate = useCallback((data) => {
+    let updatedComponents = 0;
+    let updatedSubassemblies = 0;
+
+    // Atnaujinti komponentų likučius
+    data.forEach(item => {
+      if (updateComponentStock(item.name, item.quantity)) {
+        updatedComponents++;
+      }
+      if (updateSubassemblyQuantity(item.name, item.quantity)) {
+        updatedSubassemblies++;
+      }
+    });
+
+    toast({
+      title: "Likučiai atnaujinti!",
+      description: `Atnaujinta ${updatedComponents} komponentų ir ${updatedSubassemblies} subasemblių`
+    });
+  }, [updateComponentStock, updateSubassemblyQuantity, toast]);
   const handleUpdateSubassembly = useCallback((id, updates) => {
     const updatedSubassemblies = { ...subassemblies };
     
@@ -363,6 +431,9 @@ const ProductionHierarchy = () => {
                 <Button size="sm" variant="outline" onClick={() => setShowExcelImport(true)}>
                   Importuoti
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowExcelUpdate(true)}>
+                  Atnaujinti likučius
+                </Button>
               </div>
             </div>
           )}
@@ -399,6 +470,44 @@ const ProductionHierarchy = () => {
           </Button>
         </div>
 
+        {/* Zoom Controls */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-40 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+          <Button
+            onClick={handleZoomIn}
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleZoomOut}
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleFitToScreen}
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+          >
+            <Maximize className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={handleResetView}
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 p-0"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <div className="flex items-center px-2 text-sm text-gray-600">
+            {Math.round(zoom * 100)}%
+          </div>
+        </div>
         {/* Lock Status Indicator */}
         {isLocked && (
           <div className="fixed bottom-4 left-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
@@ -520,6 +629,19 @@ const ProductionHierarchy = () => {
         }}
         categories={categories}
         allSubassemblies={Object.values(subassemblies).flat()}
+      />
+
+      <ExcelImportDialog
+        open={showExcelImport}
+        onOpenChange={setShowExcelImport}
+        onImportSubassemblyWithComponents={handleImportSubassemblyWithComponents}
+        categoryName={categories.find(c => c.id === selectedCategory)?.name || ''}
+      />
+
+      <ExcelUpdateDialog
+        open={showExcelUpdate}
+        onOpenChange={setShowExcelUpdate}
+        onImport={handleExcelUpdate}
       />
     </div>
   );
