@@ -197,6 +197,33 @@ const MainLayout = () => {
                 </TooltipContent>
               </Tooltip>
             )}
+
+            {/* AI Chat - Always available */}
+            <div className="border-t border-gray-200/50 pt-2 mt-2">
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <NavLink
+                    to={aiChatItem.to}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) =>
+                      `group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? `${aiChatItem.bgColor} ${aiChatItem.color} shadow-lg scale-105`
+                          : 'text-gray-600 hover:bg-white/60 hover:text-gray-900 hover:scale-105'
+                      }`
+                    }
+                  >
+                    <aiChatItem.icon className="h-6 w-6 flex-shrink-0" />
+                    <span className="lg:hidden xl:block font-medium truncate">
+                      {aiChatItem.label}
+                    </span>
+                  </NavLink>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="lg:block xl:hidden hidden">
+                  <p>{aiChatItem.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {/* User Section */}
