@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { supabase, inventoryCyclesAPI } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,60 +36,17 @@ const InventoryCycles = () => {
   const { toast } = useToast();
   const [showTutorial, setShowTutorial] = useState(false);
   
-  // Inventorizacijos ciklų nustatymai
-  const [cycleSettings, setCycleSettings] = useState(() => {
-    const saved = localStorage.getItem('inventory-cycle-settings');
-    return saved ? JSON.parse(saved) : {
-      defaultCycleMonths: 3,
-      startDate: new Date().toISOString().split('T')[0],
-      criticalComponents: [],
-      customCycles: {}
-    };
+  // Supabase duomenų būsenos
+  const [cycleSettings, setCycleSettings] = useState({
+    defaultCycleMonths: 3,
+    startDate: new Date().toISOString().split('T')[0],
+    criticalComponents: [],
+    customCycles: {}
   });
-
-  // Inventorizacijos įrašai su neatitikimais
-  const [inventoryRecords, setInventoryRecords] = useState(() => {
-    const saved = localStorage.getItem('inventory-records');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    // Demo duomenys
-    return [
-      {
-        id: 1,
-        componentId: 'comp-1',
-        date: '2024-01-15',
-        expectedStock: 50,
-        actualStock: 47,
-        difference: -3,
-        notes: 'Trūksta 3 vnt. - galimas vagystės atvejis',
-        inspector: 'Jonas Petraitis',
-        week: 'W03'
-      },
-      {
-        id: 2,
-        componentId: 'comp-2',
-        date: '2024-01-10',
-        expectedStock: 40,
-        actualStock: 42,
-        difference: 2,
-        notes: 'Rasta 2 papildomi vienetai sandėlyje',
-        inspector: 'Marija Kazlauskienė',
-        week: 'W02'
-      },
-      {
-        id: 3,
-        componentId: 'comp-3',
-        date: '2024-01-08',
-        expectedStock: 100,
-        actualStock: 100,
-        difference: 0,
-        notes: 'Tikslus skaičius',
-        inspector: 'Petras Jonaitis',
-        week: 'W02'
-      }
-    ];
-  });
+  
+  const [inventoryRecords, setInventoryRecords] = useState([]);
+  const [componentOverrides, setComponentOverrides] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Naujo įrašo forma
   const [newRecord, setNewRecord] = useState({
@@ -98,14 +56,71 @@ const InventoryCycles = () => {
     inspector: 'Dabartinis vartotojas'
   });
 
-  // Išsaugoti duomenis
+  // Užkrauti duomenis iš Supabase
   useEffect(() => {
-    localStorage.setItem('inventory-cycle-settings', JSON.stringify(cycleSettings));
-  }, [cycleSettings]);
+    loadData();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('inventory-records', JSON.stringify(inventoryRecords));
-  }, [inventoryRecords]);
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Užkrauti nustatymus
+      const settings = await inventoryCyclesAPI.getSettings();
+      setCycleSettings({
+        defaultCycleMonths: settings.default_cycle_months || 3,
+        startDate: settings.start_date || new Date().toISOString().split('T')[0],
+        criticalComponents: [],
+        customCycles: {}
+      });
+      
+      // Užkrauti įrašus
+      const records = await inventoryCyclesAPI.getRecords();
+      const formattedRecords = records.map(record => ({
+        id: record.id,
+        componentId: record.component_id,
+        date: record.check_date,
+        expectedStock: record.expected_stock,
+        actualStock: record.actual_stock,
+        difference: record.difference,
+        notes: record.notes,
+        inspector: record.inspector,
+        week: record.week_number
+      }));
+      setInventoryRecords(formattedRecords);
+      
+      // Užkrauti komponentų perrašymus
+      const overrides = await inventoryCyclesAPI.getComponentOverrides();
+      setComponentOverrides(overrides);
+      
+      // Atnaujinti nustatymus su perrašymais
+      const customCycles = {};
+      const criticalComponents = [];
+      
+      overrides.forEach(override => {
+        customCycles[override.component_id] = override.cycle_months;
+        if (override.is_critical) {
+          criticalComponents.push(override.component_id);
+        }
+      });
+      
+      setCycleSettings(prev => ({
+        ...prev,
+        customCycles,
+        criticalComponents
+      }));
+      
+    } catch (error) {
+      console.error('Klaida kraunant duomenis:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko užkrauti duomenų iš duomenų bazės.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Generuoti inventorizacijos grafiką metams
   const yearlySchedule = useMemo(() => {
