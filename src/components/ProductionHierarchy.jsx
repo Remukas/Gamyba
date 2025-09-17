@@ -436,12 +436,12 @@ const ProductionHierarchy = () => {
       {/* Sidebar Toggle Button - Always Visible */}
       <Button
         onClick={toggleSidebar}
-        className={`fixed top-4 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-lg border-0 rounded-full w-8 h-8 p-0 transition-all duration-300 ${
-          isSidebarCollapsed ? 'left-4' : 'left-[316px]'
+        className={`fixed top-1/2 -translate-y-1/2 z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-10 h-16 p-0 transition-all duration-300 flex items-center justify-center ${
+          isSidebarCollapsed ? 'left-0' : 'left-80'
         }`}
         size="sm"
       >
-        {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        {isSidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
       </Button>
 
       {/* Main Canvas Area */}
