@@ -19,7 +19,11 @@ import {
   Zap,
   Bot,
   CheckCircle,
-  Circle
+  Circle,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize
 } from 'lucide-react';
 import SubassemblyNode from '@/components/SubassemblyNode';
 import SubassemblyDetails from '@/components/SubassemblyDetails';
@@ -29,7 +33,6 @@ import StatusManager from '@/components/StatusManager';
 import ExcelImportDialog from '@/components/ExcelImportDialog';
 import ExcelUpdateDialog from '@/components/ExcelUpdateDialog';
 import AIAssistant from '@/components/AIAssistant';
-import { ZoomIn, ZoomOut, RotateCcw, Maximize } from 'lucide-react';
 import Xarrow from 'react-xarrows';
 
 const ProductionHierarchy = () => {
@@ -137,7 +140,6 @@ const ProductionHierarchy = () => {
   }, []);
 
   const handleFitToScreen = useCallback(() => {
-    // Automatiškai pritaikyti zoom pagal turinį
     setZoom(0.8);
     setPan({ x: 0, y: 0 });
   }, []);
@@ -168,7 +170,6 @@ const ProductionHierarchy = () => {
   const handleConnection = useCallback((sourceId, targetId) => {
     const updatedSubassemblies = { ...subassemblies };
     
-    // Find source subassembly and add target to its children
     for (const category in updatedSubassemblies) {
       const categorySubassemblies = updatedSubassemblies[category];
       const sourceIndex = categorySubassemblies.findIndex(sa => sa.id === sourceId);
@@ -255,7 +256,6 @@ const ProductionHierarchy = () => {
     let updatedComponents = 0;
     let updatedSubassemblies = 0;
 
-    // Atnaujinti komponentų likučius
     data.forEach(item => {
       if (updateComponentStock(item.name, item.quantity)) {
         updatedComponents++;
@@ -300,7 +300,6 @@ const ProductionHierarchy = () => {
     for (const category in updatedSubassemblies) {
       updatedSubassemblies[category] = updatedSubassemblies[category].filter(sa => sa.id !== id);
       
-      // Remove from children arrays
       updatedSubassemblies[category].forEach(sa => {
         if (sa.children) {
           sa.children = sa.children.filter(childId => childId !== id);
@@ -498,7 +497,7 @@ const ProductionHierarchy = () => {
         </div>
       </div>
       
-      {/* Sidebar Toggle Button - Always Visible */}
+      {/* Sidebar Toggle Button */}
       <Button
         onClick={toggleSidebar}
         className={`fixed z-50 bg-blue-600 hover:bg-blue-700 text-white shadow-xl border-0 rounded-full w-14 h-14 p-0 transition-all duration-300 flex items-center justify-center ${
@@ -511,8 +510,8 @@ const ProductionHierarchy = () => {
 
       {/* Main Canvas Area */}
       <div className="flex-1 relative">
-        {/* Top Controls */}
-        <div className="absolute top-4 right-4 z-40 flex gap-2">
+        {/* VIRŠUTINIAI MYGTUKAI - UŽRAKINTI IR PAGALBA */}
+        <div className="absolute top-4 right-4 z-50 flex gap-2">
           <Button
             onClick={toggleLock}
             className={`${isLocked ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'} text-white shadow-lg px-8 py-4 h-auto min-w-[180px] whitespace-nowrap text-base font-medium`}
@@ -539,51 +538,48 @@ const ProductionHierarchy = () => {
           </Button>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+        {/* ZOOM VALDYMO MYGTUKAI - CENTRE VIRŠUJE */}
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-50 flex gap-2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border">
           <Button
             onClick={handleZoomIn}
             size="sm"
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            title="Padidinti mastelį"
           >
-            <ZoomIn className="h-4 w-4" />
+            <ZoomIn className="h-5 w-5" />
           </Button>
           <Button
             onClick={handleZoomOut}
             size="sm"
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            title="Sumažinti mastelį"
           >
-            <ZoomOut className="h-4 w-4" />
+            <ZoomOut className="h-5 w-5" />
           </Button>
           <Button
             onClick={handleFitToScreen}
             size="sm"
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            title="Pritaikyti ekranui"
           >
-            <Maximize className="h-4 w-4" />
+            <Maximize className="h-5 w-5" />
           </Button>
           <Button
             onClick={handleResetView}
             size="sm"
             variant="outline"
-            className="h-8 w-8 p-0"
+            className="h-10 w-10 p-0 bg-white hover:bg-gray-50"
+            title="Grįžti į pradinį vaizdą"
           >
-            <RotateCcw className="h-4 w-4" />
+            <RotateCcw className="h-5 w-5" />
           </Button>
-          <div className="flex items-center px-2 text-sm text-gray-600">
+          <div className="flex items-center px-3 text-sm font-medium text-gray-700 bg-gray-100 rounded">
             {Math.round(zoom * 100)}%
           </div>
         </div>
-        
-        {/* Lock Status Indicator */}
-        {isLocked && (
-          <div className={`fixed ${isSidebarCollapsed ? 'left-4' : 'left-[316px]'} bottom-36 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50`}>
-            🔒 Subasembliai užrakinti
-          </div>
-        )}
         
         {/* Canvas */}
         <div 
@@ -592,18 +588,16 @@ const ProductionHierarchy = () => {
           onWheel={handleWheel}
           style={{ 
             transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-            minWidth: '200vw',
-            minHeight: '200vh'
           }}
         >
-          {/* Invisible large area for dragging */}
+          {/* MILŽINIŠKAS PLOTAS SUBASEMBLIAMS */}
           <div 
-            className="absolute inset-0 w-full h-full"
+            className="absolute"
             style={{ 
-              width: '500vw', 
-              height: '500vh',
-              minWidth: '8000px',
-              minHeight: '6000px'
+              width: '8000px',
+              height: '6000px',
+              left: '-4000px',
+              top: '-3000px'
             }}
           >
             {/* Render Subassemblies */}
@@ -639,23 +633,30 @@ const ProductionHierarchy = () => {
               <h3 className="text-xl font-semibold mb-4">🏭 Gamybos Medžio Instrukcijos</h3>
               <div className="space-y-4 text-sm">
                 <div>
-                  <h4 className="font-semibold text-blue-600">Šoninės Panelės Valdymas:</h4>
+                  <h4 className="font-semibold text-blue-600">Zoom Valdymas:</h4>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Spauskite rodyklės mygtuką kairėje, kad susklapti/išskleisti šoninę panelę</li>
-                    <li>Susklapus panelę matysite pilną gamybos medžio vaizdą</li>
+                    <li>Pelės ratukas - zoom in/out</li>
+                    <li>+ mygtukas - padidinti</li>
+                    <li>- mygtukas - sumažinti</li>
+                    <li>⬜ mygtukas - pritaikyti ekranui</li>
+                    <li>↻ mygtukas - grįžti į pradinį</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-red-600">Subasemblių Užrakinimas:</h4>
+                  <h4 className="font-semibold text-green-600">Progreso Procentai:</h4>
                   <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>Spauskite spynos mygtuką viršuje, kad užrakinti/atrakinti subasemblius</li>
-                    <li>Užrakinus negalėsite stumdyti subasemblių</li>
-                    <li>Užrakinti subasembliai pažymėti raudonu tašku</li>
+                    <li>Žalia progreso juosta prie kiekvienos kategorijos</li>
+                    <li>Procentas skaičiuojamas pagal quantity > 0</li>
+                    <li>✓ žalia varnelė = pagamintas subasemblis</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-green-600">Ryšiai Tarp Subasemblių:</h4>
-                  <p>Mėlyni ryšiai su šešėliais rodo sąsajas tarp subasemblių - dabar aiškiau matomi.</p>
+                  <h4 className="font-semibold text-red-600">Didelis Canvas Plotas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>8000×6000px plotas subasembliams</li>
+                    <li>Galite stumdyti labai toli</li>
+                    <li>Sumažinus mastelį - dar daugiau vietos</li>
+                  </ul>
                 </div>
               </div>
               <div className="flex justify-end mt-6">
@@ -705,11 +706,17 @@ const ProductionHierarchy = () => {
           />
         )}
 
+        <StatusManager
+          open={showStatusManager}
+          onOpenChange={setShowStatusManager}
+          statuses={statuses}
+          setStatuses={setStatuses}
+        />
+
         <AIAssistant
           open={showAIAssistant}
           onOpenChange={setShowAIAssistant}
           onPlanConfirm={(plan) => {
-            // Handle AI plan confirmation
             console.log('AI Plan:', plan);
           }}
           categories={categories}
