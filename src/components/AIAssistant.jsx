@@ -272,6 +272,79 @@ import React, { useState, useRef, useEffect } from 'react';
                                                 </div>
                                             </div>
                                         )}
+                                        {msg.inventoryAnalysis && (
+                                            <div className="mt-3 border-t pt-3 space-y-2">
+                                                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                                    <Package className="h-4 w-4 text-green-500" />
+                                                    Atsargų Detalės:
+                                                </h4>
+                                                <div className="text-sm bg-green-50 p-3 rounded-md border">
+                                                    {msg.inventoryAnalysis.lowStockComponents.length > 0 ? (
+                                                        <ul className="space-y-1">
+                                                            {msg.inventoryAnalysis.lowStockComponents.slice(0, 5).map((component) => (
+                                                                <li key={component.name} className="flex justify-between text-red-600">
+                                                                    <span>{component.name}</span>
+                                                                    <span className="font-semibold">{component.stock} vnt. ({component.leadTime}d)</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-green-700">✅ Visų komponentų atsargos pakankamos!</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {msg.statisticsAnalysis && (
+                                            <div className="mt-3 border-t pt-3 space-y-2">
+                                                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                                    <BarChart3 className="h-4 w-4 text-purple-500" />
+                                                    Kategorijų Statistika:
+                                                </h4>
+                                                <div className="text-sm bg-purple-50 p-3 rounded-md border space-y-2">
+                                                    {msg.statisticsAnalysis.categoryStats.map((cat) => (
+                                                        <div key={cat.name} className="flex justify-between items-center">
+                                                            <span>{cat.name}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs">{cat.completed}/{cat.total}</span>
+                                                                <span className="font-semibold text-purple-600">{cat.percentage}%</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {msg.planningAnalysis && (
+                                            <div className="mt-3 border-t pt-3 space-y-2">
+                                                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                                    <Factory className="h-4 w-4 text-orange-500" />
+                                                    Planavimo Detalės:
+                                                </h4>
+                                                <div className="text-sm bg-orange-50 p-3 rounded-md border">
+                                                    <div className="mb-2">
+                                                        <strong>Laukia gamybos:</strong> {msg.planningAnalysis.pendingSubassemblies.length} subasemblių
+                                                    </div>
+                                                    <div>
+                                                        <strong>Kritiniai komponentai:</strong> {msg.planningAnalysis.criticalComponents.length} tipų
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {msg.optimizationAnalysis && (
+                                            <div className="mt-3 border-t pt-3 space-y-2">
+                                                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                                    <Settings className="h-4 w-4 text-indigo-500" />
+                                                    Optimizavimo Planas:
+                                                </h4>
+                                                <div className="text-sm bg-indigo-50 p-3 rounded-md border">
+                                                    <div className="mb-2">
+                                                        <strong>Prioritetas:</strong> {msg.optimizationAnalysis.priority === 'inventory' ? 'Atsargų valdymas' : 'Gamybos tempas'}
+                                                    </div>
+                                                    <div className="text-xs">
+                                                        <strong>Efektyvumas:</strong> {Math.round(msg.optimizationAnalysis.completionRate)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         {msg.plan && (
                                             <div className="mt-3 border-t pt-3 space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
