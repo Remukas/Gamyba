@@ -3,15 +3,15 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // Import custom plugins
-import { editModePlugin } from './plugins/visual-editor/vite-plugin-edit-mode.js'
-import { reactInlineEditorPlugin } from './plugins/visual-editor/vite-plugin-react-inline-editor.js'
-import { iframeRouteRestorationPlugin } from './plugins/vite-plugin-iframe-route-restoration.js'
+import inlineEditDevPlugin from './plugins/visual-editor/vite-plugin-edit-mode.js'
+import inlineEditPlugin from './plugins/visual-editor/vite-plugin-react-inline-editor.js'
+import iframeRouteRestorationPlugin from './plugins/vite-plugin-iframe-route-restoration.js'
 
 export default defineConfig({
   plugins: [
     react(),
-    editModePlugin(),
-    reactInlineEditorPlugin(),
+    inlineEditDevPlugin(),
+    inlineEditPlugin(),
     iframeRouteRestorationPlugin()
   ],
   resolve: {
