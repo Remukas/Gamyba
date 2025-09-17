@@ -598,129 +598,130 @@ const ProductionHierarchy = () => {
               minWidth: '3000px',
               minHeight: '2000px'
             }}
-        >
-          {/* Render Subassemblies */}
-          <AnimatePresence>
-            {filteredSubassemblies.map(subassembly => (
-              <SubassemblyNode
-                key={subassembly.id}
-                subassembly={subassembly}
-                isSelected={selectedSubassembly?.id === subassembly.id}
-                onClick={() => handleSubassemblyClick(subassembly)}
-                onUpdate={(updates) => handleUpdateSubassembly(subassembly.id, updates)}
-                zoom={zoom}
-                isConnectingTarget={connectionSource && connectionSource !== subassembly.id}
-                statuses={statuses}
-                isLocked={isLocked}
-              />
-            ))}
-          </AnimatePresence>
-
-          {/* Render Connections */}
-          {renderConnections()}
-        </div>
-      </div>
-
-      {/* Tutorial Dialog */}
-      {showTutorial && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
           >
-            <h3 className="text-xl font-semibold mb-4">🏭 Gamybos Medžio Instrukcijos</h3>
-            <div className="space-y-4 text-sm">
-              <div>
-                <h4 className="font-semibold text-blue-600">Šoninės Panelės Valdymas:</h4>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Spauskite rodyklės mygtuką kairėje, kad susklapti/išskleisti šoninę panelę</li>
-                  <li>Susklapus panelę matysite pilną gamybos medžio vaizdą</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-red-600">Subasemblių Užrakinimas:</h4>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li>Spauskite spynos mygtuką viršuje, kad užrakinti/atrakinti subasemblius</li>
-                  <li>Užrakinus negalėsite stumdyti subasemblių</li>
-                  <li>Užrakinti subasembliai pažymėti raudonu tašku</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-green-600">Ryšiai Tarp Subasemblių:</h4>
-                <p>Mėlyni ryšiai su šešėliais rodo sąsajas tarp subasemblių - dabar aiškiau matomi.</p>
-              </div>
-            </div>
-            <div className="flex justify-end mt-6">
-              <Button onClick={() => setShowTutorial(false)}>
-                Supratau
-              </Button>
-            </div>
-          </motion.div>
+            {/* Render Subassemblies */}
+            <AnimatePresence>
+              {filteredSubassemblies.map(subassembly => (
+                <SubassemblyNode
+                  key={subassembly.id}
+                  subassembly={subassembly}
+                  isSelected={selectedSubassembly?.id === subassembly.id}
+                  onClick={() => handleSubassemblyClick(subassembly)}
+                  onUpdate={(updates) => handleUpdateSubassembly(subassembly.id, updates)}
+                  zoom={zoom}
+                  isConnectingTarget={connectionSource && connectionSource !== subassembly.id}
+                  statuses={statuses}
+                  isLocked={isLocked}
+                />
+              ))}
+            </AnimatePresence>
+
+            {/* Render Connections */}
+            {renderConnections()}
+          </div>
         </div>
-      )}
 
-      {/* Dialogs */}
-      {selectedSubassembly && (
-        <SubassemblyDetails
-          subassembly={selectedSubassembly}
-          onClose={() => setSelectedSubassembly(null)}
-          onUpdate={(updates) => handleUpdateSubassembly(selectedSubassembly.id, updates)}
-          onDelete={() => handleDeleteSubassembly(selectedSubassembly.id)}
-          onConnect={() => {
-            setIsConnecting(true);
-            setConnectionSource(selectedSubassembly.id);
-            setSelectedSubassembly(null);
-            toast({
-              title: "Sujungimo režimas",
-              description: "Pasirinkite subasemblį, kurį norite sujungti"
-            });
-          }}
+        {/* Tutorial Dialog */}
+        {showTutorial && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+            >
+              <h3 className="text-xl font-semibold mb-4">🏭 Gamybos Medžio Instrukcijos</h3>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-blue-600">Šoninės Panelės Valdymas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Spauskite rodyklės mygtuką kairėje, kad susklapti/išskleisti šoninę panelę</li>
+                    <li>Susklapus panelę matysite pilną gamybos medžio vaizdą</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-red-600">Subasemblių Užrakinimas:</h4>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Spauskite spynos mygtuką viršuje, kad užrakinti/atrakinti subasemblius</li>
+                    <li>Užrakinus negalėsite stumdyti subasemblių</li>
+                    <li>Užrakinti subasembliai pažymėti raudonu tašku</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-600">Ryšiai Tarp Subasemblių:</h4>
+                  <p>Mėlyni ryšiai su šešėliais rodo sąsajas tarp subasemblių - dabar aiškiau matomi.</p>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setShowTutorial(false)}>
+                  Supratau
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Dialogs */}
+        {selectedSubassembly && (
+          <SubassemblyDetails
+            subassembly={selectedSubassembly}
+            onClose={() => setSelectedSubassembly(null)}
+            onUpdate={(updates) => handleUpdateSubassembly(selectedSubassembly.id, updates)}
+            onDelete={() => handleDeleteSubassembly(selectedSubassembly.id)}
+            onConnect={() => {
+              setIsConnecting(true);
+              setConnectionSource(selectedSubassembly.id);
+              setSelectedSubassembly(null);
+              toast({
+                title: "Sujungimo režimas",
+                description: "Pasirinkite subasemblį, kurį norite sujungti"
+              });
+            }}
+            statuses={statuses}
+            onShowComponents={() => setShowComponentDialog(true)}
+          />
+        )}
+
+        <AddSubassemblyDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          onAdd={handleAddSubassembly}
+          category={categories.find(c => c.id === selectedCategory)?.name || ''}
           statuses={statuses}
-          onShowComponents={() => setShowComponentDialog(true)}
         />
-      )}
 
-      <AddSubassemblyDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onAdd={handleAddSubassembly}
-        category={categories.find(c => c.id === selectedCategory)?.name || ''}
-        statuses={statuses}
-      />
+        {selectedSubassembly && (
+          <ComponentListDialog
+            open={showComponentDialog}
+            onOpenChange={setShowComponentDialog}
+            subassembly={selectedSubassembly}
+            onUpdateSubassembly={handleUpdateSubassembly}
+          />
+        )}
 
-      {selectedSubassembly && (
-        <ComponentListDialog
-          open={showComponentDialog}
-          onOpenChange={setShowComponentDialog}
-          subassembly={selectedSubassembly}
-          onUpdateSubassembly={handleUpdateSubassembly}
+        <AIAssistant
+          open={showAIAssistant}
+          onOpenChange={setShowAIAssistant}
+          onPlanConfirm={(plan) => {
+            // Handle AI plan confirmation
+            console.log('AI Plan:', plan);
+          }}
+          categories={categories}
+          allSubassemblies={Object.values(subassemblies).flat()}
         />
-      )}
 
-      <AIAssistant
-        open={showAIAssistant}
-        onOpenChange={setShowAIAssistant}
-        onPlanConfirm={(plan) => {
-          // Handle AI plan confirmation
-          console.log('AI Plan:', plan);
-        }}
-        categories={categories}
-        allSubassemblies={Object.values(subassemblies).flat()}
-      />
+        <ExcelImportDialog
+          open={showExcelImport}
+          onOpenChange={setShowExcelImport}
+          onImportSubassemblyWithComponents={handleImportSubassemblyWithComponents}
+          categoryName={categories.find(c => c.id === selectedCategory)?.name || ''}
+        />
 
-      <ExcelImportDialog
-        open={showExcelImport}
-        onOpenChange={setShowExcelImport}
-        onImportSubassemblyWithComponents={handleImportSubassemblyWithComponents}
-        categoryName={categories.find(c => c.id === selectedCategory)?.name || ''}
-      />
-
-      <ExcelUpdateDialog
-        open={showExcelUpdate}
-        onOpenChange={setShowExcelUpdate}
-        onImport={handleExcelUpdate}
-      />
+        <ExcelUpdateDialog
+          open={showExcelUpdate}
+          onOpenChange={setShowExcelUpdate}
+          onImport={handleExcelUpdate}
+        />
+      </div>
     </div>
   );
 };
