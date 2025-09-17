@@ -64,7 +64,7 @@ const LoginForm = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Gamybos Valdymas
               </h1>
-              <p className="text-gray-600">Profesionali gamybos valdymo sistema</p>
+              <p className="text-gray-600">Gamybos valdymo sistema</p>
             </div>
           </div>
           
