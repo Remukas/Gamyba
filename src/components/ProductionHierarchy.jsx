@@ -95,9 +95,7 @@ const ProductionHierarchy = () => {
     categories.forEach(category => {
       const categorySubassemblies = subassemblies[category.id] || [];
       const totalSubassemblies = categorySubassemblies.length;
-      const completedSubassemblies = categorySubassemblies.filter(sa => 
-        sa.quantity > 0
-      ).length;
+      const completedSubassemblies = categorySubassemblies.filter(sa => sa.quantity > 0).length;
       
       const percentage = totalSubassemblies > 0 ? Math.round((completedSubassemblies / totalSubassemblies) * 100) : 0;
       
@@ -406,20 +404,20 @@ const ProductionHierarchy = () => {
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
                           <span className="text-sm font-medium">{category.name}</span>
                         </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            {progress.percentage}%
+                          </div>
+                        </div>
                       </div>
                       
-                      {/* PROGRESS BAR - ČIAA MATYSITE PROGRESĄ! */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-600">
                             {progress.completed}/{progress.total} subasemblių
                           </span>
-                          <span className="text-sm font-bold text-green-600">
-                            {progress.percentage}%
-                          </span>
                         </div>
                         
-                        {/* Progress Bar */}
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div 
                             className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all duration-500"
@@ -584,8 +582,22 @@ const ProductionHierarchy = () => {
         {/* Canvas */}
         <div 
           ref={canvasRef}
-          className="w-full h-full hierarchy-canvas overflow-hidden relative"
-          style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
+          className="w-full h-full hierarchy-canvas relative"
+          style={{ 
+            transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+            minWidth: '200vw',
+            minHeight: '200vh'
+          }}
+        >
+          {/* Invisible large area for dragging */}
+          <div 
+            className="absolute inset-0 w-full h-full"
+            style={{ 
+              width: '200vw', 
+              height: '200vh',
+              minWidth: '3000px',
+              minHeight: '2000px'
+            }}
         >
           {/* Render Subassemblies */}
           <AnimatePresence>
