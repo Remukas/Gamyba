@@ -203,8 +203,8 @@ const ProductionHierarchy = () => {
       id: `${selectedCategory}-${Date.now()}`,
       ...data,
       position: { 
-        x: 1800 + Math.random() * 400, 
-        y: 1300 + Math.random() * 400 
+        x: 3800 + Math.random() * 400, 
+        y: 2800 + Math.random() * 400 
       },
       children: [],
       components: [],
@@ -231,8 +231,8 @@ const ProductionHierarchy = () => {
       targetQuantity: 1,
       status: 'pending',
       position: { 
-        x: 1800 + Math.random() * 400, 
-        y: 1300 + Math.random() * 400 
+        x: 3800 + Math.random() * 400, 
+        y: 2800 + Math.random() * 400 
       },
       children: [],
       components: data.components || [],
@@ -586,19 +586,17 @@ const ProductionHierarchy = () => {
           ref={canvasRef}
           className="w-full h-full hierarchy-canvas relative overflow-hidden"
           onWheel={handleWheel}
-          style={{ 
-            transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-          }}
         >
-          {/* DIDELIS PLOTAS SUBASEMBLIAMS - CENTRUOTAS */}
           <div 
-            className="absolute"
+            className="absolute inset-0"
             style={{ 
-              width: '4000px',
-              height: '3000px',
+              transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+              width: '8000px',
+              height: '6000px',
               left: '50%',
               top: '50%',
-              transform: 'translate(-50%, -50%)'
+              marginLeft: '-4000px',
+              marginTop: '-3000px'
             }}
           >
             {/* Render Subassemblies */}
