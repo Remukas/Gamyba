@@ -593,10 +593,10 @@ const ProductionHierarchy = () => {
           <div 
             className="absolute inset-0 w-full h-full"
             style={{ 
-              width: '200vw', 
-              height: '200vh',
-              minWidth: '3000px',
-              minHeight: '2000px'
+              width: '500vw', 
+              height: '500vh',
+              minWidth: '8000px',
+              minHeight: '6000px'
             }}
           >
             {/* Render Subassemblies */}
