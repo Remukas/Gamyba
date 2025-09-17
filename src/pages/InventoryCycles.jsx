@@ -709,8 +709,17 @@ const InventoryCycles = () => {
                   </div>
 
                   <Button onClick={handleAddRecord} className="w-full bg-gradient-to-r from-green-600 to-green-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Registruoti Inventorizaciją
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Išsaugoma...
+                      </div>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Registruoti Inventorizaciją
+                      </>
+                    )}
                   </Button>
                 </CardContent>
               </Card>
@@ -952,14 +961,14 @@ const InventoryCycles = () => {
                   </div>
 
                   <Button 
-                    onClick={async () => {
+                    onClick={() => {
                       setCycleSettings(prev => ({...prev, startDate: new Date().toISOString().split('T')[0]}));
-                      await saveSettings();
+                      toast({ title: "Nustatymai atnaujinti!", description: "Pradžios data nustatyta į šiandien." });
                     }}
                     className="w-full"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Išsaugoti Nustatymus
+                    Atnaujinti Grafiką
                   </Button>
                 </CardContent>
               </Card>
