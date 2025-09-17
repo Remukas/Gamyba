@@ -474,7 +474,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
                         </div>
                         
                         <div className="flex gap-2">
-                            <Button onClick={() => setShowAddDialog(true)} className="flex-1" size="sm">
+                            <Button onClick={() => window.location.href = '/components'} className="flex-1" size="sm">
                               <Plus className="h-4 w-4 mr-2" />
                               Pridėti subasemblį
                             </Button>
