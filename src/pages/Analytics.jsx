@@ -218,7 +218,7 @@ const Analytics = () => {
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
                 Kritiniai Komponentai
               </CardTitle>
-              <CardDescription>Komponentai su mažomis atsargomis (< 10 vnt.)</CardDescription>
+              <CardDescription>Komponentai su mažomis atsargomis (&lt; 10 vnt.)</CardDescription>
             </CardHeader>
             <CardContent>
               {analytics.lowStockComponents > 0 ? (
