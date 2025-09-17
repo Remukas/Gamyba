@@ -584,5 +584,3 @@ const InventoryCycles = () => {
 };
 
 export default InventoryCycles;
-
-export default InventoryCycles
