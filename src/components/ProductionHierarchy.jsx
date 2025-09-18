@@ -325,7 +325,80 @@ const ProductionHierarchy = () => {
   const handleDeleteSubassembly = useCallback((id) => {
     deleteSubassembly(id);
     setSelectedSubassembly(null);
-  }, [subassemblies, setSubassemblies, toast]);
+  }, [toast]);
+
+  const addSubassembly = useCallback(async (categoryId, subassemblyData) => {
+    try {
+      const newSubassembly = {
+        id: `${categoryId}-${Date.now()}`,
+        name: subassemblyData.name,
+        quantity: subassemblyData.quantity || 0,
+        status: subassemblyData.status || 'pending',
+        position: subassemblyData.position || { x: 200 + Math.random() * 300, y: 150 + Math.random() * 200 },
+        children: [],
+        components: [],
+        category: categoryId,
+        comments: subassemblyData.comments || []
+      };
+      
+      setSubassemblies(prev => ({
+        ...prev,
+        [categoryId]: [...(prev[categoryId] || []), newSubassembly]
+      }));
+      
+      toast({
+        title: "Subasemblis pridėtas!",
+        description: `"${newSubassembly.name}" sėkmingai pridėtas.`
+      });
+      
+      return newSubassembly;
+    } catch (error) {
+      console.error('Error adding subassembly:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pridėti subasemblio.",
+        variant: "destructive"
+      });
+    }
+  }, [setSubassemblies, toast]);
+
+  const updateSubassembly = useCallback((id, updates) => {
+    setSubassemblies(prev => {
+      const newSubassemblies = { ...prev };
+      for (const categoryId in newSubassemblies) {
+        const index = newSubassemblies[categoryId].findIndex(sa => sa.id === id);
+        if (index !== -1) {
+          newSubassemblies[categoryId][index] = {
+            ...newSubassemblies[categoryId][index],
+            ...updates
+          };
+          break;
+        }
+      }
+      return newSubassemblies;
+    });
+  }, [setSubassemblies]);
+
+  const deleteSubassembly = useCallback((id) => {
+    setSubassemblies(prev => {
+      const newSubassemblies = { ...prev };
+      for (const categoryId in newSubassemblies) {
+        newSubassemblies[categoryId] = newSubassemblies[categoryId].filter(sa => sa.id !== id);
+        // Also remove from children arrays
+        newSubassemblies[categoryId].forEach(sa => {
+          if (sa.children) {
+            sa.children = sa.children.filter(childId => childId !== id);
+          }
+        });
+      }
+      return newSubassemblies;
+    });
+    
+    toast({
+      title: "Subasemblis ištrintas!",
+      description: "Subasemblis sėkmingai pašalintas."
+    });
+  }, [setSubassemblies, toast]);
 
   const handleAIQuery = (query) => {
     const lowerInput = query.toLowerCase();

@@ -156,113 +156,67 @@ export const ComponentsProvider = ({ children }) => {
 
   // Subassembly management functions
   const addSubassembly = async (categoryId, subassemblyData) => {
-    try {
-      const newSubassembly = await subassembliesAPI.createSubassembly({
-        ...subassemblyData,
-        category_id: categoryId,
-        position_x: subassemblyData.position?.x || 200,
-        position_y: subassemblyData.position?.y || 150
-      });
-      
-      // Transform to frontend format
-      const transformedSA = {
-        id: newSubassembly.id,
-        name: newSubassembly.name,
-        quantity: newSubassembly.quantity || 0,
-        targetQuantity: newSubassembly.target_quantity || 1,
-        status: newSubassembly.status || 'pending',
-        position: { x: newSubassembly.position_x, y: newSubassembly.position_y },
-        category: newSubassembly.category_id,
-        children: [],
-        components: [],
-        comments: []
-      };
-      
-      setSubassemblies(prev => ({
-        ...prev,
-        [categoryId]: [...(prev[categoryId] || []), transformedSA]
-      }));
-      
-      return transformedSA;
-    } catch (error) {
-      console.error('Error adding subassembly:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko pridėti subasemblio.",
-        variant: "destructive"
-      });
-    }
+    const newSubassembly = {
+      id: `${categoryId}-${Date.now()}`,
+      name: subassemblyData.name,
+      quantity: subassemblyData.quantity || 0,
+      status: subassemblyData.status || 'pending',
+      position: subassemblyData.position || { x: 200 + Math.random() * 300, y: 150 + Math.random() * 200 },
+      children: [],
+      components: [],
+      category: categoryId,
+      comments: subassemblyData.comments || []
+    };
+    
+    setSubassemblies(prev => ({
+      ...prev,
+      [categoryId]: [...(prev[categoryId] || []), newSubassembly]
+    }));
+    
+    toast({
+      title: "Subasemblis pridėtas!",
+      description: `"${newSubassembly.name}" sėkmingai pridėtas.`
+    });
+    
+    return newSubassembly;
   };
 
   const updateSubassembly = async (id, updates) => {
-    try {
-      const dbUpdates = {
-        ...updates,
-        position_x: updates.position?.x,
-        position_y: updates.position?.y,
-        target_quantity: updates.targetQuantity
-      };
-      
-      // Remove frontend-specific fields
-      delete dbUpdates.position;
-      delete dbUpdates.targetQuantity;
-      delete dbUpdates.children;
-      delete dbUpdates.category;
-      
-      const updatedSubassembly = await subassembliesAPI.updateSubassembly(id, dbUpdates);
-      
-      // Update local state
-      setSubassemblies(prev => {
-        const newSubassemblies = { ...prev };
-        for (const categoryId in newSubassemblies) {
-          const index = newSubassemblies[categoryId].findIndex(sa => sa.id === id);
-          if (index !== -1) {
-            newSubassemblies[categoryId][index] = {
-              ...newSubassemblies[categoryId][index],
-              ...updates
-            };
-            break;
-          }
+    setSubassemblies(prev => {
+      const newSubassemblies = { ...prev };
+      for (const categoryId in newSubassemblies) {
+        const index = newSubassemblies[categoryId].findIndex(sa => sa.id === id);
+        if (index !== -1) {
+          newSubassemblies[categoryId][index] = {
+            ...newSubassemblies[categoryId][index],
+            ...updates
+          };
+          break;
         }
-        return newSubassemblies;
-      });
-      
-      return updatedSubassembly;
-    } catch (error) {
-      console.error('Error updating subassembly:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko atnaujinti subasemblio.",
-        variant: "destructive"
-      });
-    }
+      }
+      return newSubassemblies;
+    });
   };
 
   const deleteSubassembly = async (id) => {
-    try {
-      await subassembliesAPI.deleteSubassembly(id);
-      
-      setSubassemblies(prev => {
-        const newSubassemblies = { ...prev };
-        for (const categoryId in newSubassemblies) {
-          newSubassemblies[categoryId] = newSubassemblies[categoryId].filter(sa => sa.id !== id);
-          // Also remove from children arrays
-          newSubassemblies[categoryId].forEach(sa => {
-            if (sa.children) {
-              sa.children = sa.children.filter(childId => childId !== id);
-            }
-          });
-        }
-        return newSubassemblies;
-      });
-    } catch (error) {
-      console.error('Error deleting subassembly:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko ištrinti subasemblio.",
-        variant: "destructive"
-      });
-    }
+    setSubassemblies(prev => {
+      const newSubassemblies = { ...prev };
+      for (const categoryId in newSubassemblies) {
+        newSubassemblies[categoryId] = newSubassemblies[categoryId].filter(sa => sa.id !== id);
+        // Also remove from children arrays
+        newSubassemblies[categoryId].forEach(sa => {
+          if (sa.children) {
+            sa.children = sa.children.filter(childId => childId !== id);
+          }
+        });
+      }
+      return newSubassemblies;
+    });
+    
+    toast({
+      title: "Subasemblis ištrintas!",
+      description: "Subasemblis sėkmingai pašalintas."
+    });
   };
 
   // Helper functions
