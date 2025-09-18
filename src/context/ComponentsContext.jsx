@@ -76,7 +76,7 @@ export const ComponentsProvider = ({ children }) => {
       });
       
       // Build parent-child relationships
-      subassembliesData.forEach(sa => {
+      (subassembliesData.data || []).forEach(sa => {
         if (sa.parent_id) {
           // Find parent in grouped data and add this as child
           Object.values(groupedSubassemblies).forEach(categorySubassemblies => {
