@@ -1,7 +1,36 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
-const ComponentsContext = createContext();
+const ComponentsContext = createContext({
+  componentsInventory: [],
+  subassemblies: {},
+  categories: [],
+  isLoading: false,
+  
+  // Component functions
+  addComponent: () => {},
+  updateComponent: () => {},
+  deleteComponent: () => {},
+  getComponentByName: () => null,
+  updateComponentStock: () => false,
+  
+  // Subassembly functions
+  addSubassembly: () => {},
+  updateSubassembly: () => {},
+  deleteSubassembly: () => {},
+  updateSubassemblyQuantity: () => false,
+  
+  // Category functions
+  setCategories: () => {},
+  
+  // Helper functions
+  getAllSubassembliesMap: () => new Map(),
+  addOrUpdateInventory: () => {},
+  
+  // Setters (for compatibility)
+  setComponentsInventory: () => {},
+  setSubassemblies: () => {}
+});
 
 export const useComponents = () => useContext(ComponentsContext);
 
