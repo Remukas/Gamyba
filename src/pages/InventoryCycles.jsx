@@ -68,11 +68,12 @@ const InventoryCycles = () => {
   ]);
 
   const getCurrentWeek = () => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    const diff = now - start;
+    // 2025-01-18 yra W03 savaitė
+    const now = new Date('2025-01-18'); // Simuliuojame dabartinę datą
+    const yearStart = new Date(2025, 0, 6); // 2025-01-06 yra pirmadienio W02 pradžia
+    const diff = now - yearStart;
     const oneWeek = 1000 * 60 * 60 * 24 * 7;
-    return Math.ceil(diff / oneWeek);
+    return Math.max(1, Math.ceil(diff / oneWeek) + 1); // +1 nes pradedame nuo W02
   };
 
   const currentWeek = getCurrentWeek();
