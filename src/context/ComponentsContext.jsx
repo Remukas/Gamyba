@@ -32,7 +32,18 @@ export const ComponentsProvider = ({ children }) => {
       setComponentsInventory(componentsData);
       
       // Load subassemblies
-      const subassembliesData = await subassembliesAPI.getSubassemblies();
+      const subassembliesData = await supabase
+        .from('subassemblies')
+        .select(`
+          *,
+          components:subassembly_components(
+            required_quantity,
+            component:components(id, name, stock)
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (subassembliesData.error) throw subassembliesData.error;
       
       // Group subassemblies by category
       const groupedSubassemblies = {};
@@ -40,7 +51,7 @@ export const ComponentsProvider = ({ children }) => {
         groupedSubassemblies[cat.id] = [];
       });
       
-      subassembliesData.forEach(sa => {
+      (subassembliesData.data || []).forEach(sa => {
         if (sa.category_id && groupedSubassemblies[sa.category_id]) {
           // Transform database format to frontend format
           const transformedSA = {

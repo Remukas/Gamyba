@@ -141,14 +141,7 @@ export const componentsAPI = {
     }
   }
 };
-
-// Subasemblių valdymas
-export const subassembliesAPI = {
-  async getSubassemblies() {
-    const { data, error } = await supabase
-      .from('subassemblies')
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
