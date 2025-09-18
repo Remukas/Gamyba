@@ -207,7 +207,7 @@ export const ComponentsProvider = ({ children }) => {
       status: subassemblyData.status || 'pending',
       position: subassemblyData.position || { x: 200 + Math.random() * 300, y: 150 + Math.random() * 200 },
       children: [],
-      components: [],
+      components: subassemblyData.components || [],
       category: categoryId,
       comments: subassemblyData.comments || []
     };
