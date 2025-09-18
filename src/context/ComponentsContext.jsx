@@ -3,7 +3,8 @@ import {
   categoriesAPI, 
   componentsAPI, 
   subassembliesAPI,
-  productionHistoryAPI 
+  productionHistoryAPI,
+  supabase
 } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
