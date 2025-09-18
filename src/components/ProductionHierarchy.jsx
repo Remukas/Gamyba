@@ -36,6 +36,7 @@ import AIAssistant from '@/components/AIAssistant';
 import Xarrow from 'react-xarrows';
 
 const ProductionHierarchy = () => {
+  const componentsContext = useComponents();
   const { 
     subassemblies, 
     setSubassemblies, 
@@ -44,11 +45,8 @@ const ProductionHierarchy = () => {
     componentsInventory,
     addOrUpdateInventory,
     updateComponentStock,
-    updateSubassemblyQuantity,
-    addSubassembly,
-    updateSubassembly,
-    deleteSubassembly
-  } = useComponents();
+    updateSubassemblyQuantity
+  } = componentsContext;
   
   const { toast } = useToast();
   
@@ -240,7 +238,7 @@ const ProductionHierarchy = () => {
   }, [subassemblies, setSubassemblies, toast]);
 
   const handleAddSubassembly = useCallback((data) => {
-    const newSubassembly = addSubassembly(selectedCategory, {
+    const newSubassembly = componentsContext.addSubassembly(selectedCategory, {
       ...data,
       position: { 
         x: 200 + Math.random() * 300, 
@@ -252,14 +250,14 @@ const ProductionHierarchy = () => {
       title: "Subasemblis pridėtas!",
       description: `"${data.name}" sėkmingai pridėtas.`
     });
-  }, [selectedCategory, addSubassembly, toast]);
+  }, [selectedCategory, componentsContext.addSubassembly, toast]);
 
   const handleImportSubassemblyWithComponents = useCallback(async (data) => {
     // Filtruoti tik egzistuojančius komponentus
     const validComponents = (data.components || []).filter(comp => comp.componentId);
     
     // Sukurti subasemblį
-    const newSubassembly = addSubassembly(selectedCategory, {
+    const newSubassembly = componentsContext.addSubassembly(selectedCategory, {
       name: data.name,
       quantity: 0,
       status: 'pending',
@@ -274,7 +272,7 @@ const ProductionHierarchy = () => {
       title: "Subasemblis importuotas!",
       description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
     });
-  }, [selectedCategory, addSubassembly, toast]);
+  }, [selectedCategory, componentsContext.addSubassembly, toast]);
 
   const handleExcelUpdate = useCallback((data) => {
     let updatedComponents = 0;
@@ -296,17 +294,17 @@ const ProductionHierarchy = () => {
   }, [updateComponentStock, updateSubassemblyQuantity, toast]);
   
   const handleUpdateSubassembly = useCallback((id, updates) => {
-    updateSubassembly(id, updates);
+    componentsContext.updateSubassembly(id, updates);
     
     if (selectedSubassembly && selectedSubassembly.id === id) {
       setSelectedSubassembly({ ...selectedSubassembly, ...updates });
     }
-  }, [updateSubassembly, selectedSubassembly]);
+  }, [componentsContext.updateSubassembly, selectedSubassembly]);
 
   const handleDeleteSubassembly = useCallback((id) => {
-    deleteSubassembly(id);
+    componentsContext.deleteSubassembly(id);
     setSelectedSubassembly(null);
-  }, [deleteSubassembly]);
+  }, [componentsContext.deleteSubassembly]);
 
   const handleAIQuery = (query) => {
     const lowerInput = query.toLowerCase();
