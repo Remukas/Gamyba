@@ -142,6 +142,8 @@ import React, { useState, useCallback, useEffect } from 'react';
                 setParsedData(parsed);
                 toast({ title: "Duomenys nuskaityti", description: `Rastas subasemblis ir ${extractedComponents.length} komponentų.` });
 
+             setIsLoading(false);
+             return;
             } catch (error) {
                 console.error("Parsing error:", error);
                 toast({ title: "Analizės klaida", description: "Nepavyko apdoroti nurodytų laukų.", variant: "destructive" });

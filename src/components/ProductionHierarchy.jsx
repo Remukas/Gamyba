@@ -262,18 +262,20 @@ const ProductionHierarchy = () => {
   }, [selectedCategory, subassemblies, setSubassemblies, toast]);
 
   const handleImportSubassemblyWithComponents = useCallback((data) => {
+    // Filtruoti tik egzistuojančius komponentus
+    const validComponents = (data.components || []).filter(comp => comp.componentId);
+    
     const newSubassembly = {
       id: `${selectedCategory}-${Date.now()}`,
       name: data.name,
       quantity: 0,
-      targetQuantity: 1,
       status: 'pending',
       position: { 
         x: 200 + Math.random() * 300, 
         y: 150 + Math.random() * 200 
       },
       children: [],
-      components: data.components || [],
+      components: validComponents,
       category: selectedCategory,
       comments: []
     };
@@ -284,9 +286,13 @@ const ProductionHierarchy = () => {
     };
 
     setSubassemblies(updatedSubassemblies);
+    
+    // Atnaujinti localStorage
+    localStorage.setItem('production-hierarchy', JSON.stringify(updatedSubassemblies));
+    
     toast({
       title: "Subasemblis importuotas!",
-      description: `"${data.name}" sėkmingai importuotas su komponentais`
+      description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
     });
   }, [selectedCategory, subassemblies, setSubassemblies, toast]);
 
