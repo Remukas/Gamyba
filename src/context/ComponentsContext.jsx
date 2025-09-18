@@ -1,165 +1,209 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { 
-  categoriesAPI, 
-  componentsAPI, 
-  subassembliesAPI,
-  productionHistoryAPI,
-  supabase
-} from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
 
 const ComponentsContext = createContext();
 
 export const useComponents = () => useContext(ComponentsContext);
 
+// Pradiniai duomenys
+const initialCategories = [
+  { id: 'cart', name: 'Cart', color: 'bg-blue-500' },
+  { id: 'control-unit', name: 'Control Unit', color: 'bg-green-500' },
+  { id: 'frame', name: 'Frame', color: 'bg-purple-500' },
+  { id: 'wheels', name: 'Wheels', color: 'bg-orange-500' }
+];
+
+const initialComponents = [
+  { id: 'comp-1', name: 'Steel Plate 10mm', stock: 25, leadTimeDays: 14 },
+  { id: 'comp-2', name: 'Aluminum Profile 40x40', stock: 50, leadTimeDays: 7 },
+  { id: 'comp-3', name: 'Bearing 6204', stock: 8, leadTimeDays: 21 },
+  { id: 'comp-4', name: 'Motor 24V', stock: 12, leadTimeDays: 28 },
+  { id: 'comp-5', name: 'Control Board PCB', stock: 15, leadTimeDays: 35 },
+  { id: 'comp-6', name: 'Wheel Assembly', stock: 20, leadTimeDays: 14 },
+  { id: 'comp-7', name: 'Bolt M8x25', stock: 100, leadTimeDays: 3 },
+  { id: 'comp-8', name: 'Nut M8', stock: 150, leadTimeDays: 3 },
+  { id: 'comp-9', name: 'Washer M8', stock: 200, leadTimeDays: 3 },
+  { id: 'comp-10', name: 'Cable 2.5mm²', stock: 45, leadTimeDays: 10 }
+];
+
+const initialSubassemblies = {
+  'cart': [
+    {
+      id: 'cart-sa-1',
+      name: 'Cart SA-10000170',
+      quantity: 5,
+      targetQuantity: 10,
+      status: 'in_progress',
+      position: { x: 300, y: 200 },
+      children: ['cart-sa-2', 'cart-sa-3'],
+      components: [
+        { componentId: 'comp-1', requiredQuantity: 2 },
+        { componentId: 'comp-7', requiredQuantity: 8 }
+      ],
+      category: 'cart',
+      comments: ['Pagrindinis cart subasemblis', 'Reikia patikrinti matmenis']
+    },
+    {
+      id: 'cart-sa-2',
+      name: 'Base Frame',
+      quantity: 8,
+      targetQuantity: 10,
+      status: 'completed',
+      position: { x: 100, y: 350 },
+      children: [],
+      components: [
+        { componentId: 'comp-2', requiredQuantity: 4 },
+        { componentId: 'comp-7', requiredQuantity: 12 }
+      ],
+      category: 'cart',
+      comments: []
+    },
+    {
+      id: 'cart-sa-3',
+      name: 'Top Assembly',
+      quantity: 3,
+      targetQuantity: 10,
+      status: 'pending',
+      position: { x: 500, y: 350 },
+      children: [],
+      components: [
+        { componentId: 'comp-1', requiredQuantity: 1 },
+        { componentId: 'comp-8', requiredQuantity: 6 }
+      ],
+      category: 'cart',
+      comments: ['Laukia medžiagų']
+    }
+  ],
+  'control-unit': [
+    {
+      id: 'control-sa-1',
+      name: 'Control unit SA-10000111',
+      quantity: 2,
+      targetQuantity: 5,
+      status: 'in_progress',
+      position: { x: 250, y: 180 },
+      children: ['control-sa-2'],
+      components: [
+        { componentId: 'comp-5', requiredQuantity: 1 },
+        { componentId: 'comp-10', requiredQuantity: 3 }
+      ],
+      category: 'control-unit',
+      comments: ['Elektronikos modulis']
+    },
+    {
+      id: 'control-sa-2',
+      name: 'Power Module',
+      quantity: 0,
+      targetQuantity: 5,
+      status: 'pending',
+      position: { x: 150, y: 320 },
+      children: [],
+      components: [
+        { componentId: 'comp-4', requiredQuantity: 1 },
+        { componentId: 'comp-10', requiredQuantity: 2 }
+      ],
+      category: 'control-unit',
+      comments: []
+    }
+  ],
+  'frame': [
+    {
+      id: 'frame-sa-1',
+      name: 'Main Frame Assembly',
+      quantity: 1,
+      targetQuantity: 3,
+      status: 'in_progress',
+      position: { x: 200, y: 200 },
+      children: [],
+      components: [
+        { componentId: 'comp-2', requiredQuantity: 8 },
+        { componentId: 'comp-3', requiredQuantity: 4 },
+        { componentId: 'comp-7', requiredQuantity: 16 }
+      ],
+      category: 'frame',
+      comments: ['Pagrindinis rėmas']
+    }
+  ],
+  'wheels': [
+    {
+      id: 'wheels-sa-1',
+      name: 'Wheel Assembly Set',
+      quantity: 0,
+      targetQuantity: 4,
+      status: 'pending',
+      position: { x: 180, y: 160 },
+      children: [],
+      components: [
+        { componentId: 'comp-6', requiredQuantity: 4 },
+        { componentId: 'comp-3', requiredQuantity: 8 }
+      ],
+      category: 'wheels',
+      comments: []
+    }
+  ]
+};
+
 export const ComponentsProvider = ({ children }) => {
   const { toast } = useToast();
-  const [componentsInventory, setComponentsInventory] = useState([]);
-  const [subassemblies, setSubassemblies] = useState({});
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Lokalus duomenų saugojimas
+  const [componentsInventory, setComponentsInventory] = useState(() => {
+    const saved = localStorage.getItem('components-inventory');
+    return saved ? JSON.parse(saved) : initialComponents;
+  });
+  
+  const [subassemblies, setSubassemblies] = useState(() => {
+    const saved = localStorage.getItem('subassemblies');
+    return saved ? JSON.parse(saved) : initialSubassemblies;
+  });
+  
+  const [categories, setCategories] = useState(() => {
+    const saved = localStorage.getItem('categories');
+    return saved ? JSON.parse(saved) : initialCategories;
+  });
+  
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load all data from Supabase
-  const loadData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      
-      // Load categories
-      const categoriesData = await categoriesAPI.getCategories();
-      setCategories(categoriesData);
-      
-      // Load components
-      const componentsData = await componentsAPI.getComponents();
-      setComponentsInventory(componentsData);
-      
-      // Load subassemblies
-      const subassembliesData = await supabase
-        .from('subassemblies')
-        .select(`
-          *,
-          components:subassembly_components(
-            required_quantity,
-            component:components(id, name, stock)
-          )
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (subassembliesData.error) throw subassembliesData.error;
-      
-      // Group subassemblies by category
-      const groupedSubassemblies = {};
-      categoriesData.forEach(cat => {
-        groupedSubassemblies[cat.id] = [];
-      });
-      
-      (subassembliesData.data || []).forEach(sa => {
-        if (sa.category_id && groupedSubassemblies[sa.category_id]) {
-          // Transform database format to frontend format
-          const transformedSA = {
-            id: sa.id,
-            name: sa.name,
-            quantity: sa.quantity || 0,
-            targetQuantity: sa.target_quantity || 1,
-            status: sa.status || 'pending',
-            position: { x: sa.position_x || 200, y: sa.position_y || 150 },
-            category: sa.category_id,
-            children: [], // Will be populated from parent_id relationships
-            components: (sa.components || []).map(comp => ({
-              componentId: comp.component.id,
-              requiredQuantity: comp.required_quantity
-            })),
-            comments: []
-          };
-          
-          groupedSubassemblies[sa.category_id].push(transformedSA);
-        }
-      });
-      
-      // Build parent-child relationships
-      (subassembliesData.data || []).forEach(sa => {
-        if (sa.parent_id) {
-          // Find parent in grouped data and add this as child
-          Object.values(groupedSubassemblies).forEach(categorySubassemblies => {
-            const parent = categorySubassemblies.find(p => p.id === sa.parent_id);
-            if (parent && !parent.children.includes(sa.id)) {
-              parent.children.push(sa.id);
-            }
-          });
-        }
-      });
-      
-      setSubassemblies(groupedSubassemblies);
-      
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko įkelti duomenų iš duomenų bazės.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  // Load data on mount
+  // Išsaugoti duomenis į localStorage
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    localStorage.setItem('components-inventory', JSON.stringify(componentsInventory));
+  }, [componentsInventory]);
+
+  useEffect(() => {
+    localStorage.setItem('subassemblies', JSON.stringify(subassemblies));
+  }, [subassemblies]);
+
+  useEffect(() => {
+    localStorage.setItem('categories', JSON.stringify(categories));
+  }, [categories]);
 
   // Component management functions
-  const addComponent = async (componentData) => {
-    try {
-      const newComponent = await componentsAPI.createComponent(componentData);
-      setComponentsInventory(prev => [...prev, newComponent]);
-      return newComponent;
-    } catch (error) {
-      console.error('Error adding component:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko pridėti komponento.",
-        variant: "destructive"
-      });
-    }
+  const addComponent = (componentData) => {
+    const newComponent = {
+      id: `comp-${Date.now()}`,
+      ...componentData
+    };
+    setComponentsInventory(prev => [...prev, newComponent]);
+    return newComponent;
   };
 
-  const updateComponent = async (id, updates) => {
-    try {
-      const updatedComponent = await componentsAPI.updateComponent(id, updates);
-      setComponentsInventory(prev => 
-        prev.map(c => c.id === id ? updatedComponent : c)
-      );
-      return updatedComponent;
-    } catch (error) {
-      console.error('Error updating component:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko atnaujinti komponento.",
-        variant: "destructive"
-      });
-    }
+  const updateComponent = (id, updates) => {
+    setComponentsInventory(prev => 
+      prev.map(c => c.id === id ? { ...c, ...updates } : c)
+    );
   };
 
-  const deleteComponent = async (id) => {
-    try {
-      await componentsAPI.deleteComponent(id);
-      setComponentsInventory(prev => prev.filter(c => c.id !== id));
-    } catch (error) {
-      console.error('Error deleting component:', error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko ištrinti komponento.",
-        variant: "destructive"
-      });
-    }
+  const deleteComponent = (id) => {
+    setComponentsInventory(prev => prev.filter(c => c.id !== id));
   };
 
   // Subassembly management functions
-  const addSubassembly = async (categoryId, subassemblyData) => {
+  const addSubassembly = (categoryId, subassemblyData) => {
     const newSubassembly = {
       id: `${categoryId}-${Date.now()}`,
       name: subassemblyData.name,
       quantity: subassemblyData.quantity || 0,
+      targetQuantity: subassemblyData.targetQuantity || 1,
       status: subassemblyData.status || 'pending',
       position: subassemblyData.position || { x: 200 + Math.random() * 300, y: 150 + Math.random() * 200 },
       children: [],
@@ -173,15 +217,10 @@ export const ComponentsProvider = ({ children }) => {
       [categoryId]: [...(prev[categoryId] || []), newSubassembly]
     }));
     
-    toast({
-      title: "Subasemblis pridėtas!",
-      description: `"${newSubassembly.name}" sėkmingai pridėtas.`
-    });
-    
     return newSubassembly;
   };
 
-  const updateSubassembly = async (id, updates) => {
+  const updateSubassembly = (id, updates) => {
     setSubassemblies(prev => {
       const newSubassemblies = { ...prev };
       for (const categoryId in newSubassemblies) {
@@ -198,7 +237,7 @@ export const ComponentsProvider = ({ children }) => {
     });
   };
 
-  const deleteSubassembly = async (id) => {
+  const deleteSubassembly = (id) => {
     setSubassemblies(prev => {
       const newSubassemblies = { ...prev };
       for (const categoryId in newSubassemblies) {
@@ -211,11 +250,6 @@ export const ComponentsProvider = ({ children }) => {
         });
       }
       return newSubassemblies;
-    });
-    
-    toast({
-      title: "Subasemblis ištrintas!",
-      description: "Subasemblis sėkmingai pašalintas."
     });
   };
 
@@ -230,39 +264,38 @@ export const ComponentsProvider = ({ children }) => {
     return componentsInventory.find(c => c.name.toLowerCase() === name.toLowerCase());
   };
 
-  const updateComponentStock = async (name, stock) => {
+  const updateComponentStock = (name, stock) => {
     const component = getComponentByName(name);
     if (component) {
-      await updateComponent(component.id, { stock });
+      updateComponent(component.id, { stock });
       return true;
     }
     return false;
   };
 
-  const updateSubassemblyQuantity = async (name, quantity) => {
+  const updateSubassemblyQuantity = (name, quantity) => {
     const allSAs = Object.values(subassemblies).flat();
     const subassembly = allSAs.find(sa => sa.name.toLowerCase() === name.toLowerCase());
     if (subassembly) {
-      await updateSubassembly(subassembly.id, { quantity });
+      updateSubassembly(subassembly.id, { quantity });
       return true;
     }
     return false;
   };
 
-  // Legacy compatibility functions
-  const addOrUpdateInventory = async (items) => {
-    for (const item of items) {
+  const addOrUpdateInventory = (items) => {
+    items.forEach(item => {
       const existing = getComponentByName(item.name);
       if (existing) {
-        await updateComponent(existing.id, { stock: item.stock });
+        updateComponent(existing.id, { stock: item.stock });
       } else {
-        await addComponent({
+        addComponent({
           name: item.name,
           stock: item.stock,
-          lead_time_days: 0
+          leadTimeDays: 0
         });
       }
-    }
+    });
   };
 
   const value = {
@@ -291,12 +324,9 @@ export const ComponentsProvider = ({ children }) => {
     getAllSubassembliesMap,
     addOrUpdateInventory,
     
-    // Legacy setters (for compatibility)
+    // Setters (for compatibility)
     setComponentsInventory,
-    setSubassemblies,
-    
-    // Reload function
-    loadData
+    setSubassemblies
   };
 
   return (
