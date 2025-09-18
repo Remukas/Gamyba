@@ -178,27 +178,27 @@ export const ComponentsProvider = ({ children }) => {
   }, [categories]);
 
   // Component management functions
-  function addComponent(componentData) {
+  const addComponent = useCallback((componentData) => {
     const newComponent = {
       id: `comp-${Date.now()}`,
       ...componentData
     };
     setComponentsInventory(prev => [...prev, newComponent]);
     return newComponent;
-  }
+  }, []);
 
-  function updateComponent(id, updates) {
+  const updateComponent = useCallback((id, updates) => {
     setComponentsInventory(prev => 
       prev.map(c => c.id === id ? { ...c, ...updates } : c)
     );
-  }
+  }, []);
 
-  function deleteComponent(id) {
+  const deleteComponent = useCallback((id) => {
     setComponentsInventory(prev => prev.filter(c => c.id !== id));
-  }
+  }, []);
 
   // Subassembly management functions
-  function addSubassembly(categoryId, subassemblyData) {
+  const addSubassembly = useCallback((categoryId, subassemblyData) => {
     const newSubassembly = {
       id: `${categoryId}-${Date.now()}`,
       name: subassemblyData.name,
@@ -218,9 +218,9 @@ export const ComponentsProvider = ({ children }) => {
     }));
     
     return newSubassembly;
-  }
+  }, []);
 
-  function updateSubassembly(id, updates) {
+  const updateSubassembly = useCallback((id, updates) => {
     setSubassemblies(prev => {
       const newSubassemblies = { ...prev };
       for (const categoryId in newSubassemblies) {
@@ -235,9 +235,9 @@ export const ComponentsProvider = ({ children }) => {
       }
       return newSubassemblies;
     });
-  }
+  }, []);
 
-  function deleteSubassembly(id) {
+  const deleteSubassembly = useCallback((id) => {
     setSubassemblies(prev => {
       const newSubassemblies = { ...prev };
       for (const categoryId in newSubassemblies) {
@@ -251,7 +251,7 @@ export const ComponentsProvider = ({ children }) => {
       }
       return newSubassemblies;
     });
-  }
+  }, []);
 
   // Helper functions
   const getAllSubassembliesMap = useCallback(() => {
@@ -260,20 +260,20 @@ export const ComponentsProvider = ({ children }) => {
     return map;
   }, [subassemblies]);
 
-  function getComponentByName(name) {
+  const getComponentByName = useCallback((name) => {
     return componentsInventory.find(c => c.name.toLowerCase() === name.toLowerCase());
-  }
+  }, [componentsInventory]);
 
-  function updateComponentStock(name, stock) {
+  const updateComponentStock = useCallback((name, stock) => {
     const component = getComponentByName(name);
     if (component) {
       updateComponent(component.id, { stock });
       return true;
     }
     return false;
-  }
+  }, [getComponentByName, updateComponent]);
 
-  function updateSubassemblyQuantity(name, quantity) {
+  const updateSubassemblyQuantity = useCallback((name, quantity) => {
     const allSAs = Object.values(subassemblies).flat();
     const subassembly = allSAs.find(sa => sa.name.toLowerCase() === name.toLowerCase());
     if (subassembly) {
@@ -281,9 +281,9 @@ export const ComponentsProvider = ({ children }) => {
       return true;
     }
     return false;
-  }
+  }, [subassemblies, updateSubassembly]);
 
-  function addOrUpdateInventory(items) {
+  const addOrUpdateInventory = useCallback((items) => {
     items.forEach(item => {
       const existing = getComponentByName(item.name);
       if (existing) {
@@ -296,7 +296,7 @@ export const ComponentsProvider = ({ children }) => {
         });
       }
     });
-  }
+  }, [getComponentByName, updateComponent, addComponent]);
 
   const value = {
     componentsInventory,
