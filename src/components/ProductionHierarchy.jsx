@@ -36,7 +36,6 @@ import AIAssistant from '@/components/AIAssistant';
 import Xarrow from 'react-xarrows';
 
 const ProductionHierarchy = () => {
-  const componentsContext = useComponents();
   const { 
     subassemblies, 
     setSubassemblies, 
@@ -45,8 +44,11 @@ const ProductionHierarchy = () => {
     componentsInventory,
     addOrUpdateInventory,
     updateComponentStock,
-    updateSubassemblyQuantity
-  } = componentsContext;
+    updateSubassemblyQuantity,
+    addSubassembly,
+    updateSubassembly,
+    deleteSubassembly
+  } = useComponents();
   
   const { toast } = useToast();
   
@@ -76,7 +78,7 @@ const ProductionHierarchy = () => {
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef(null);
   
-  // Default statuses - pašalinu isLocked state
+  // Default statuses
   const [statuses, setStatuses] = useState([
     { id: 'pending', name: 'Laukiama', color: '#f97316' },
     { id: 'in_progress', name: 'Vykdoma', color: '#3b82f6' },
@@ -204,7 +206,7 @@ const ProductionHierarchy = () => {
     } else {
       setSelectedSubassembly(subassembly);
     }
-  }, [isConnecting, connectionSource]);
+  }, [isConnecting, connectionSource, toast]);
 
   const handleConnection = useCallback((sourceId, targetId) => {
     const updatedSubassemblies = { ...subassemblies };
@@ -238,51 +240,55 @@ const ProductionHierarchy = () => {
   }, [subassemblies, setSubassemblies, toast]);
 
   const handleAddSubassembly = useCallback((data) => {
-    const newSubassembly = componentsContext.addSubassembly(selectedCategory, {
-      ...data,
-      position: { 
-        x: 200 + Math.random() * 300, 
-        y: 150 + Math.random() * 200 
-      }
-    });
-    
-    toast({
-      title: "Subasemblis pridėtas!",
-      description: `"${data.name}" sėkmingai pridėtas.`
-    });
-  }, [selectedCategory, componentsContext.addSubassembly, toast]);
+    if (addSubassembly) {
+      const newSubassembly = addSubassembly(selectedCategory, {
+        ...data,
+        position: { 
+          x: 200 + Math.random() * 300, 
+          y: 150 + Math.random() * 200 
+        }
+      });
+      
+      toast({
+        title: "Subasemblis pridėtas!",
+        description: `"${data.name}" sėkmingai pridėtas.`
+      });
+    }
+  }, [selectedCategory, addSubassembly, toast]);
 
-  const handleImportSubassemblyWithComponents = useCallback(async (data) => {
-    // Filtruoti tik egzistuojančius komponentus
-    const validComponents = (data.components || []).filter(comp => comp.componentId);
-    
-    // Sukurti subasemblį
-    const newSubassembly = componentsContext.addSubassembly(selectedCategory, {
-      name: data.name,
-      quantity: 0,
-      status: 'pending',
-      position: { 
-        x: 200 + Math.random() * 300, 
-        y: 150 + Math.random() * 200 
-      },
-      components: validComponents
-    });
-    
-    toast({
-      title: "Subasemblis importuotas!",
-      description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
-    });
-  }, [selectedCategory, componentsContext.addSubassembly, toast]);
+  const handleImportSubassemblyWithComponents = useCallback((data) => {
+    if (addSubassembly) {
+      // Filtruoti tik egzistuojančius komponentus
+      const validComponents = (data.components || []).filter(comp => comp.componentId);
+      
+      // Sukurti subasemblį
+      const newSubassembly = addSubassembly(selectedCategory, {
+        name: data.name,
+        quantity: 0,
+        status: 'pending',
+        position: { 
+          x: 200 + Math.random() * 300, 
+          y: 150 + Math.random() * 200 
+        },
+        components: validComponents
+      });
+      
+      toast({
+        title: "Subasemblis importuotas!",
+        description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
+      });
+    }
+  }, [selectedCategory, addSubassembly, toast]);
 
   const handleExcelUpdate = useCallback((data) => {
     let updatedComponents = 0;
     let updatedSubassemblies = 0;
 
     data.forEach(item => {
-      if (updateComponentStock(item.name, item.quantity)) {
+      if (updateComponentStock && updateComponentStock(item.name, item.quantity)) {
         updatedComponents++;
       }
-      if (updateSubassemblyQuantity(item.name, item.quantity)) {
+      if (updateSubassemblyQuantity && updateSubassemblyQuantity(item.name, item.quantity)) {
         updatedSubassemblies++;
       }
     });
@@ -294,109 +300,21 @@ const ProductionHierarchy = () => {
   }, [updateComponentStock, updateSubassemblyQuantity, toast]);
   
   const handleUpdateSubassembly = useCallback((id, updates) => {
-    componentsContext.updateSubassembly(id, updates);
-    
-    if (selectedSubassembly && selectedSubassembly.id === id) {
-      setSelectedSubassembly({ ...selectedSubassembly, ...updates });
-    }
-  }, [componentsContext.updateSubassembly, selectedSubassembly]);
-
-  const handleDeleteSubassembly = useCallback((id) => {
-    componentsContext.deleteSubassembly(id);
-    setSelectedSubassembly(null);
-  }, [componentsContext.deleteSubassembly]);
-
-  const handleAIQuery = (query) => {
-    const lowerInput = query.toLowerCase();
-
-    // Atsargų analizė
-    if (lowerInput.includes('atsargos') || lowerInput.includes('likučiai') || lowerInput.includes('kiek turiu')) {
-      const lowStockComponents = componentsInventory.filter(c => c.quantity < 10);
+    if (updateSubassembly) {
+      updateSubassembly(id, updates);
       
-      return {
-        sender: 'ai',
-        text: lowStockComponents.length > 0 
-          ? `Radau ${lowStockComponents.length} komponentų su mažais likučiais:`
-          : 'Visi komponentai turi pakankamus likučius!',
-        inventoryAnalysis: { lowStockComponents }
-      };
-    }
-
-    // Komponentų sudėties analizė
-    if (lowerInput.includes('kas įeina') || lowerInput.includes('sudėtis')) {
-      const targetName = lowerInput.replace(/kas įeina į|sudėtis/g, '').trim();
-      const targetNode = Object.values(subassemblies).flat().find(sa => 
-        sa.name.toLowerCase().includes(targetName)
-      );
-
-      if (targetNode && targetNode.components && targetNode.components.length > 0) {
-        const componentDetails = targetNode.components.map(c => {
-          const componentData = componentsInventory.find(inv => inv.id === c.componentId);
-          return {
-            name: componentData ? componentData.name : 'Nežinomas komponentas',
-            quantity: c.requiredQuantity
-          };
-        });
-
-        return {
-          sender: 'ai',
-          text: `Radau informaciją apie "${targetNode.name}":`,
-          queryResult: {
-            nodeName: targetNode.name,
-            components: componentDetails
-          }
-        };
+      if (selectedSubassembly && selectedSubassembly.id === id) {
+        setSelectedSubassembly({ ...selectedSubassembly, ...updates });
       }
     }
+  }, [updateSubassembly, selectedSubassembly]);
 
-    // Statistikos analizė
-    if (lowerInput.includes('statistika') || lowerInput.includes('progresą') || lowerInput.includes('kiek')) {
-      const categoryStats = categories.map(category => {
-        const categorySubassemblies = subassemblies[category.id] || [];
-        const completed = categorySubassemblies.filter(sa => sa.quantity > 0).length;
-        const total = categorySubassemblies.length;
-        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-        
-        return { name: category.name, completed, total, percentage };
-      });
-
-      return {
-        sender: 'ai',
-        text: 'Štai jūsų gamybos statistika pagal kategorijas:',
-        statisticsAnalysis: { categoryStats }
-      };
+  const handleDeleteSubassembly = useCallback((id) => {
+    if (deleteSubassembly) {
+      deleteSubassembly(id);
+      setSelectedSubassembly(null);
     }
-
-    // Gamybos planavimas
-    if (lowerInput.includes('pagamink') || lowerInput.includes('sukurk') || lowerInput.includes('planuok')) {
-      const quantityMatch = lowerInput.match(/(\d+)/);
-      const quantity = quantityMatch ? parseInt(quantityMatch[1], 10) : 1;
-      
-      return {
-        sender: 'ai',
-        text: `Supratau! Planuoju gamybos procesą ${quantity} vienetų. Štai preliminarus planas:`,
-        plan: [
-          { name: 'Pagrindinis subasemblis', targetQuantity: quantity },
-          { name: 'Komponentų paruošimas', targetQuantity: quantity * 2 },
-          { name: 'Surinkimas', targetQuantity: quantity }
-        ]
-      };
-    }
-
-    // Bendras atsakymas
-    return {
-      sender: 'ai',
-      text: 'Galiu padėti su: atsargų analize, komponentų sudėtimi, gamybos statistika, planavimo klausimais. Pabandykite klausti: "Kokios mano atsargos?" arba "Kas įeina į [produkto pavadinimas]?"'
-    };
-  };
-
-  const handleConfirmPlan = (plan) => {
-    toast({
-      title: "Planas patvirtintas!",
-      description: "AI planas bus įgyvendintas gamybos sistemoje."
-    });
-    setShowAIAssistant(false);
-  };
+  }, [deleteSubassembly]);
 
   const renderConnections = () => {
     const connections = [];
@@ -705,7 +623,6 @@ const ProductionHierarchy = () => {
             {renderConnections()}
           </div>
         </div>
-
 
         {/* Tutorial Dialog */}
         {showTutorial && (
