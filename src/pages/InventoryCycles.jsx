@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import InventoryCheckDialog from '@/components/InventoryCheckDialog';
 import InventoryHistoryDialog from '@/components/InventoryHistoryDialog';
+import { inventoryCyclesAPI } from '@/lib/supabase';
 
 const InventoryCycles = () => {
   const { componentsInventory } = useComponents();
@@ -30,42 +31,31 @@ const InventoryCycles = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(null);
 
-  // Simuluoti inventorizacijos įrašus
-  const [inventoryRecords, setInventoryRecords] = useState([
-    {
-      id: 1,
-      week_number: 'W02',
-      component_name: 'Variklio korpusas',
-      expected_stock: 50,
-      actual_stock: 48,
-      difference: -2,
-      inspector: 'Jonas Petraitis',
-      check_date: '2024-01-08',
-      notes: 'Rasti 2 defektiniai vienetai'
-    },
-    {
-      id: 2,
-      week_number: 'W02',
-      component_name: 'Cilindro galvutė',
-      expected_stock: 40,
-      actual_stock: 42,
-      difference: 2,
-      inspector: 'Jonas Petraitis',
-      check_date: '2024-01-08',
-      notes: 'Rasti papildomi vienetai sandėlyje'
-    },
-    {
-      id: 3,
-      week_number: 'W01',
-      component_name: 'Stūmoklis',
-      expected_stock: 100,
-      actual_stock: 95,
-      difference: -5,
-      inspector: 'Marija Kazlauskienė',
-      check_date: '2024-01-01',
-      notes: 'Trūksta 5 vienetų, galimas vagystės atvejis'
-    }
-  ]);
+  // Inventorizacijos įrašai iš Supabase
+  const [inventoryRecords, setInventoryRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load inventory records from Supabase
+  useEffect(() => {
+    const loadInventoryRecords = async () => {
+      try {
+        setIsLoading(true);
+        const records = await inventoryCyclesAPI.getRecords();
+        setInventoryRecords(records);
+      } catch (error) {
+        console.error('Error loading inventory records:', error);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko įkelti inventorizacijos įrašų.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInventoryRecords();
+  }, [toast]);
 
   const getCurrentWeek = () => {
     // 2025-01-18 yra W03 savaitė
@@ -139,26 +129,33 @@ const InventoryCycles = () => {
     }
   };
 
-  const handleInventoryComplete = (weekData, records) => {
-    // Pridėti naujus įrašus
-    const newRecords = records.map(record => ({
-      id: Date.now() + Math.random(),
-      week_number: weekData.week,
-      component_name: record.componentName,
-      expected_stock: record.expectedStock,
-      actual_stock: record.actualStock,
-      difference: record.actualStock - record.expectedStock,
-      inspector: record.inspector,
-      check_date: new Date().toISOString().split('T')[0],
-      notes: record.notes || ''
-    }));
-
-    setInventoryRecords(prev => [...newRecords, ...prev]);
-    
-    toast({
-      title: "Inventorizacija užbaigta!",
-      description: `${weekData.week} savaitės inventorizacija sėkmingai įrašyta. Rasta ${records.filter(r => r.actualStock !== r.expectedStock).length} neatitikimų.`
-    });
+  const handleInventoryComplete = async (weekData, records) => {
+    try {
+      setIsLoading(true);
+      
+      // Save records to Supabase
+      if (records.length > 0) {
+        await inventoryCyclesAPI.addMultipleRecords(records);
+      }
+      
+      // Reload records from database
+      const updatedRecords = await inventoryCyclesAPI.getRecords();
+      setInventoryRecords(updatedRecords);
+      
+      toast({
+        title: "Inventorizacija užbaigta!",
+        description: `${weekData.week} savaitės inventorizacija sėkmingai įrašyta. Rasta ${records.length} neatitikimų.`
+      });
+    } catch (error) {
+      console.error('Error saving inventory records:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko išsaugoti inventorizacijos įrašų.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
