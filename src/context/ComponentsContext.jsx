@@ -1,174 +1,341 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { 
+  categoriesAPI, 
+  componentsAPI, 
+  subassembliesAPI,
+  productionHistoryAPI 
+} from '@/lib/supabase';
+import { useToast } from '@/components/ui/use-toast';
 
-    const ComponentsContext = createContext();
+const ComponentsContext = createContext();
 
-    export const useComponents = () => useContext(ComponentsContext);
+export const useComponents = () => useContext(ComponentsContext);
 
-    const initialInventory = [
-        { id: 'comp-1', name: 'Variklio korpusas', stock: 50, leadTimeDays: 7 },
-        { id: 'comp-2', name: 'Cilindro galvutė', stock: 40, leadTimeDays: 10 },
-        { id: 'comp-3', name: 'Stūmoklis', stock: 100, leadTimeDays: 5 },
-        { id: 'comp-4', name: 'Valdymo mikroschema', stock: 0, leadTimeDays: 30 },
-        { id: 'comp-5', name: 'Sensorius v1', stock: 150, leadTimeDays: 3 },
-        { id: 'comp-6', name: 'Pneumatinis vožtuvas', stock: 80, leadTimeDays: 14 },
-        { id: 'comp-7', name: 'Hidraulinė pompa', stock: 10, leadTimeDays: 21 },
-    ];
-    
-    const initialCategories = [{ id: 'cart', name: 'Cart SA-10000170', color: 'bg-blue-500' }, { id: 'control-unit', name: 'Control unit SA-10000111', color: 'bg-green-500' }, { id: 'cockpit', name: 'Cockpit SEN-1-ME-10001124', color: 'bg-yellow-500' }, { id: 'bedside-main', name: 'Bedside unit main SA-10000296', color: 'bg-purple-500' }, { id: 'nurse-workstation', name: 'Nurse Workstation SA-10000478', color: 'bg-pink-500' }, { id: 'bedside-adapter', name: 'Bedside unit adapter SA-10000401 & SA-10000404', color: 'bg-orange-500' }];
+export const ComponentsProvider = ({ children }) => {
+  const { toast } = useToast();
+  const [componentsInventory, setComponentsInventory] = useState([]);
+  const [subassemblies, setSubassemblies] = useState({});
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-
-    export const ComponentsProvider = ({ children }) => {
-        const [componentsInventory, setComponentsInventory] = useState(() => {
-            const saved = localStorage.getItem('components-inventory');
-            return saved ? JSON.parse(saved) : initialInventory;
-        });
-
-        const [subassemblies, setSubassemblies] = useState(() => {
-            const saved = localStorage.getItem('production-hierarchy');
-            if (saved) {
-              try {
-                const parsed = JSON.parse(saved);
-                return typeof parsed === 'object' && parsed !== null ? parsed : {};
-              } catch (e) {
-                return {};
-              }
+  // Load all data from Supabase
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // Load categories
+      const categoriesData = await categoriesAPI.getCategories();
+      setCategories(categoriesData);
+      
+      // Load components
+      const componentsData = await componentsAPI.getComponents();
+      setComponentsInventory(componentsData);
+      
+      // Load subassemblies
+      const subassembliesData = await subassembliesAPI.getSubassemblies();
+      
+      // Group subassemblies by category
+      const groupedSubassemblies = {};
+      categoriesData.forEach(cat => {
+        groupedSubassemblies[cat.id] = [];
+      });
+      
+      subassembliesData.forEach(sa => {
+        if (sa.category_id && groupedSubassemblies[sa.category_id]) {
+          // Transform database format to frontend format
+          const transformedSA = {
+            id: sa.id,
+            name: sa.name,
+            quantity: sa.quantity || 0,
+            targetQuantity: sa.target_quantity || 1,
+            status: sa.status || 'pending',
+            position: { x: sa.position_x || 200, y: sa.position_y || 150 },
+            category: sa.category_id,
+            children: [], // Will be populated from parent_id relationships
+            components: (sa.components || []).map(comp => ({
+              componentId: comp.component.id,
+              requiredQuantity: comp.required_quantity
+            })),
+            comments: (sa.comments || []).map(comment => comment.comment)
+          };
+          
+          groupedSubassemblies[sa.category_id].push(transformedSA);
+        }
+      });
+      
+      // Build parent-child relationships
+      subassembliesData.forEach(sa => {
+        if (sa.parent_id) {
+          // Find parent in grouped data and add this as child
+          Object.values(groupedSubassemblies).forEach(categorySubassemblies => {
+            const parent = categorySubassemblies.find(p => p.id === sa.parent_id);
+            if (parent && !parent.children.includes(sa.id)) {
+              parent.children.push(sa.id);
             }
-            return {};
+          });
+        }
+      });
+      
+      setSubassemblies(groupedSubassemblies);
+      
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko įkelti duomenų iš duomenų bazės.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  // Load data on mount
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Component management functions
+  const addComponent = async (componentData) => {
+    try {
+      const newComponent = await componentsAPI.createComponent(componentData);
+      setComponentsInventory(prev => [...prev, newComponent]);
+      return newComponent;
+    } catch (error) {
+      console.error('Error adding component:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pridėti komponento.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateComponent = async (id, updates) => {
+    try {
+      const updatedComponent = await componentsAPI.updateComponent(id, updates);
+      setComponentsInventory(prev => 
+        prev.map(c => c.id === id ? updatedComponent : c)
+      );
+      return updatedComponent;
+    } catch (error) {
+      console.error('Error updating component:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti komponento.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteComponent = async (id) => {
+    try {
+      await componentsAPI.deleteComponent(id);
+      setComponentsInventory(prev => prev.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Error deleting component:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti komponento.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Subassembly management functions
+  const addSubassembly = async (categoryId, subassemblyData) => {
+    try {
+      const newSubassembly = await subassembliesAPI.createSubassembly({
+        ...subassemblyData,
+        category_id: categoryId,
+        position_x: subassemblyData.position?.x || 200,
+        position_y: subassemblyData.position?.y || 150
+      });
+      
+      // Transform to frontend format
+      const transformedSA = {
+        id: newSubassembly.id,
+        name: newSubassembly.name,
+        quantity: newSubassembly.quantity || 0,
+        targetQuantity: newSubassembly.target_quantity || 1,
+        status: newSubassembly.status || 'pending',
+        position: { x: newSubassembly.position_x, y: newSubassembly.position_y },
+        category: newSubassembly.category_id,
+        children: [],
+        components: [],
+        comments: []
+      };
+      
+      setSubassemblies(prev => ({
+        ...prev,
+        [categoryId]: [...(prev[categoryId] || []), transformedSA]
+      }));
+      
+      return transformedSA;
+    } catch (error) {
+      console.error('Error adding subassembly:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko pridėti subasemblio.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateSubassembly = async (id, updates) => {
+    try {
+      const dbUpdates = {
+        ...updates,
+        position_x: updates.position?.x,
+        position_y: updates.position?.y,
+        target_quantity: updates.targetQuantity
+      };
+      
+      // Remove frontend-specific fields
+      delete dbUpdates.position;
+      delete dbUpdates.targetQuantity;
+      delete dbUpdates.children;
+      delete dbUpdates.category;
+      
+      const updatedSubassembly = await subassembliesAPI.updateSubassembly(id, dbUpdates);
+      
+      // Update local state
+      setSubassemblies(prev => {
+        const newSubassemblies = { ...prev };
+        for (const categoryId in newSubassemblies) {
+          const index = newSubassemblies[categoryId].findIndex(sa => sa.id === id);
+          if (index !== -1) {
+            newSubassemblies[categoryId][index] = {
+              ...newSubassemblies[categoryId][index],
+              ...updates
+            };
+            break;
+          }
+        }
+        return newSubassemblies;
+      });
+      
+      return updatedSubassembly;
+    } catch (error) {
+      console.error('Error updating subassembly:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atnaujinti subasemblio.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteSubassembly = async (id) => {
+    try {
+      await subassembliesAPI.deleteSubassembly(id);
+      
+      setSubassemblies(prev => {
+        const newSubassemblies = { ...prev };
+        for (const categoryId in newSubassemblies) {
+          newSubassemblies[categoryId] = newSubassemblies[categoryId].filter(sa => sa.id !== id);
+          // Also remove from children arrays
+          newSubassemblies[categoryId].forEach(sa => {
+            if (sa.children) {
+              sa.children = sa.children.filter(childId => childId !== id);
+            }
+          });
+        }
+        return newSubassemblies;
+      });
+    } catch (error) {
+      console.error('Error deleting subassembly:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti subasemblio.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Helper functions
+  const getAllSubassembliesMap = useCallback(() => {
+    const map = new Map();
+    Object.values(subassemblies).flat().forEach(sa => map.set(sa.id, sa));
+    return map;
+  }, [subassemblies]);
+
+  const getComponentByName = (name) => {
+    return componentsInventory.find(c => c.name.toLowerCase() === name.toLowerCase());
+  };
+
+  const updateComponentStock = async (name, stock) => {
+    const component = getComponentByName(name);
+    if (component) {
+      await updateComponent(component.id, { stock });
+      return true;
+    }
+    return false;
+  };
+
+  const updateSubassemblyQuantity = async (name, quantity) => {
+    const allSAs = Object.values(subassemblies).flat();
+    const subassembly = allSAs.find(sa => sa.name.toLowerCase() === name.toLowerCase());
+    if (subassembly) {
+      await updateSubassembly(subassembly.id, { quantity });
+      return true;
+    }
+    return false;
+  };
+
+  // Legacy compatibility functions
+  const addOrUpdateInventory = async (items) => {
+    for (const item of items) {
+      const existing = getComponentByName(item.name);
+      if (existing) {
+        await updateComponent(existing.id, { stock: item.stock });
+      } else {
+        await addComponent({
+          name: item.name,
+          stock: item.stock,
+          lead_time_days: 0
         });
-        
-        const [categories, setCategories] = useState(() => {
-            const saved = localStorage.getItem('production-categories');
-            return saved ? JSON.parse(saved) : initialCategories;
-        });
+      }
+    }
+  };
 
-        useEffect(() => {
-            localStorage.setItem('components-inventory', JSON.stringify(componentsInventory));
-        }, [componentsInventory]);
-        
-        useEffect(() => {
-            localStorage.setItem('production-categories', JSON.stringify(categories));
-        }, [categories]);
-        
-        useEffect(() => {
-            const handleStorageChange = () => {
-                const savedSubassemblies = localStorage.getItem('production-hierarchy');
-                const parsedSubassemblies = savedSubassemblies ? JSON.parse(savedSubassemblies) : {};
-                setSubassemblies(parsedSubassemblies);
+  const value = {
+    componentsInventory,
+    subassemblies,
+    categories,
+    isLoading,
+    
+    // Component functions
+    addComponent,
+    updateComponent,
+    deleteComponent,
+    getComponentByName,
+    updateComponentStock,
+    
+    // Subassembly functions
+    addSubassembly,
+    updateSubassembly,
+    deleteSubassembly,
+    updateSubassemblyQuantity,
+    
+    // Category functions
+    setCategories,
+    
+    // Helper functions
+    getAllSubassembliesMap,
+    addOrUpdateInventory,
+    
+    // Legacy setters (for compatibility)
+    setComponentsInventory,
+    setSubassemblies,
+    
+    // Reload function
+    loadData
+  };
 
-                const savedCategories = localStorage.getItem('production-categories');
-                const parsedCategories = savedCategories ? JSON.parse(savedCategories) : initialCategories;
-                setCategories(parsedCategories);
-            };
-
-            window.addEventListener('storage', handleStorageChange);
-            return () => {
-                window.removeEventListener('storage', handleStorageChange);
-            };
-        }, []);
-
-        const getAllSubassembliesMap = useCallback(() => {
-            const map = new Map();
-            if (!subassemblies) return map;
-            Object.values(subassemblies).flat().forEach(sa => map.set(sa.id, sa));
-            return map;
-        }, [subassemblies]);
-
-        const addOrUpdateInventory = (items) => {
-            setComponentsInventory(prevInventory => {
-                const newInventory = [...prevInventory];
-                items.forEach(item => {
-                    const existingIndex = newInventory.findIndex(invItem => invItem.name.toLowerCase() === item.name.toLowerCase());
-                    if (existingIndex !== -1) {
-                        newInventory[existingIndex] = { ...newInventory[existingIndex], stock: item.stock };
-                    } else {
-                        newInventory.push({
-                            id: `comp-${Date.now()}-${Math.random()}`,
-                            name: item.name,
-                            stock: item.stock,
-                            leadTimeDays: 0
-                        });
-                    }
-                });
-                return newInventory;
-            });
-        };
-        
-        const getComponentByName = (name) => {
-            return componentsInventory.find(c => c.name.toLowerCase() === name.toLowerCase());
-        };
-        
-        const addComponent = (component) => {
-            const newComponent = {
-                ...component,
-                id: `comp-${Date.now()}-${Math.random()}`
-            };
-            setComponentsInventory(prev => [...prev, newComponent]);
-        };
-
-        const updateComponent = (id, updates) => {
-            setComponentsInventory(prev => 
-                prev.map(c => c.id === id ? { ...c, ...updates } : c)
-            );
-        };
-
-        const deleteComponent = (id) => {
-            setComponentsInventory(prev => prev.filter(c => c.id !== id));
-        };
-        
-        const updateComponentStock = (name, stock) => {
-            let updated = false;
-            setComponentsInventory(prev => {
-                const newInventory = prev.map(c => {
-                    if (c.name.toLowerCase() === name.toLowerCase()) {
-                        updated = true;
-                        return { ...c, stock: stock };
-                    }
-                    return c;
-                });
-                return newInventory;
-            });
-            return updated;
-        };
-
-        const updateSubassemblyQuantity = (name, quantity) => {
-            let updated = false;
-            setSubassemblies(prev => {
-                const newSubassemblies = { ...prev };
-                for (const category in newSubassemblies) {
-                    newSubassemblies[category] = newSubassemblies[category].map(sa => {
-                        if (sa.name.toLowerCase() === name.toLowerCase()) {
-                            updated = true;
-                            return { ...sa, quantity: quantity };
-                        }
-                        return sa;
-                    });
-                }
-                return newSubassemblies;
-            });
-            return updated;
-        };
-
-
-        const value = {
-            componentsInventory,
-            addOrUpdateInventory,
-            getComponentByName,
-            setComponentsInventory,
-            addComponent,
-            updateComponent,
-            deleteComponent,
-            subassemblies,
-            setSubassemblies,
-            categories, 
-            setCategories,
-            updateComponentStock,
-            updateSubassemblyQuantity,
-            getAllSubassembliesMap,
-        };
-
-        return (
-            <ComponentsContext.Provider value={value}>
-                {children}
-            </ComponentsContext.Provider>
-        );
-    };
+  return (
+    <ComponentsContext.Provider value={value}>
+      {children}
+    </ComponentsContext.Provider>
+  );
+};

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { subassembliesAPI } from '@/lib/supabase';
     import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
     import { Button } from '@/components/ui/button';
     import { Input } from '@/components/ui/input';
@@ -27,13 +28,31 @@ import React, { useState, useMemo } from 'react';
             const updatedComponents = subassembly.components.map(c =>
                 c.componentId === componentId ? { ...c, requiredQuantity: Math.max(0, parseInt(newQuantity, 10) || 0) } : c
             );
-            onUpdateSubassembly(subassembly.id, { components: updatedComponents });
+            
+            // Update in database
+            subassembliesAPI.addSubassemblyComponents(subassembly.id, updatedComponents)
+              .then(() => {
+                onUpdateSubassembly(subassembly.id, { components: updatedComponents });
+              })
+              .catch(error => {
+                console.error('Error updating components:', error);
+                toast({ title: "Klaida", description: "Nepavyko atnaujinti komponentų.", variant: "destructive" });
+              });
         };
 
         const handleRemoveComponent = (componentId) => {
             const updatedComponents = subassembly.components.filter(c => c.componentId !== componentId);
-            onUpdateSubassembly(subassembly.id, { components: updatedComponents });
-            toast({ title: "Komponentas pašalintas." });
+            
+            // Update in database
+            subassembliesAPI.addSubassemblyComponents(subassembly.id, updatedComponents)
+              .then(() => {
+                onUpdateSubassembly(subassembly.id, { components: updatedComponents });
+                toast({ title: "Komponentas pašalintas." });
+              })
+              .catch(error => {
+                console.error('Error removing component:', error);
+                toast({ title: "Klaida", description: "Nepavyko pašalinti komponento.", variant: "destructive" });
+              });
         };
 
         const handleAddComponent = () => {
@@ -52,10 +71,19 @@ import React, { useState, useMemo } from 'react';
             };
 
             const updatedComponents = [...subassembly.components, newComponent];
-            onUpdateSubassembly(subassembly.id, { components: updatedComponents });
-            toast({ title: "Komponentas pridėtas!" });
-            setNewComponentId('');
-            setNewComponentQuantity(1);
+            
+            // Update in database
+            subassembliesAPI.addSubassemblyComponents(subassembly.id, updatedComponents)
+              .then(() => {
+                onUpdateSubassembly(subassembly.id, { components: updatedComponents });
+                toast({ title: "Komponentas pridėtas!" });
+                setNewComponentId('');
+                setNewComponentQuantity(1);
+              })
+              .catch(error => {
+                console.error('Error adding component:', error);
+                toast({ title: "Klaida", description: "Nepavyko pridėti komponento.", variant: "destructive" });
+              });
         };
 
         const availableOptions = useMemo(() => {

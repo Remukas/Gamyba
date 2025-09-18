@@ -149,14 +149,14 @@ export const subassembliesAPI = {
       .from('subassemblies')
       .select(`
         *,
-        category:categories(name, color),
+        category:categories(id, name, color),
         components:subassembly_components(
           required_quantity,
           component:components(id, name, stock)
         ),
         comments:subassembly_comments(
           id, comment, created_at,
-          author:users(name)
+          author:users(id, name)
         )
       `)
       .order('created_at', { ascending: false });
@@ -175,18 +175,16 @@ export const subassembliesAPI = {
     if (error) throw error;
     
     // Įrašyti į istoriją
-    await productionHistoryAPI.logAction('subassembly', data.id, data.name, 'created', null, subassemblyData);
+    try {
+      await productionHistoryAPI.logAction('subassembly', data.id, data.name, 'created', null, subassemblyData);
+    } catch (historyError) {
+      console.warn('Failed to log history:', historyError);
+    }
     
     return data;
   },
 
   async updateSubassembly(subassemblyId, updates) {
-    const { data: oldData } = await supabase
-      .from('subassemblies')
-      .select('*')
-      .eq('id', subassemblyId)
-      .single();
-
     const { data, error } = await supabase
       .from('subassemblies')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -196,11 +194,73 @@ export const subassembliesAPI = {
     
     if (error) throw error;
     
-    // Įrašyti į istoriją
-    if (oldData) {
-      await productionHistoryAPI.logAction('subassembly', subassemblyId, data.name, 'updated', oldData, updates);
+    // Įrašyti į istoriją (neblokuojame jei nepavyksta)
+    try {
+      await productionHistoryAPI.logAction('subassembly', subassemblyId, data.name, 'updated', null, updates);
+    } catch (historyError) {
+      console.warn('Failed to log history:', historyError);
     }
     
+    return data;
+  },
+
+  async deleteSubassembly(subassemblyId) {
+    // Get subassembly data before deletion
+    const { data: subassemblyData } = await supabase
+      .from('subassemblies')
+      .select('*')
+      .eq('id', subassemblyId)
+      .single();
+
+    const { error } = await supabase
+      .from('subassemblies')
+      .delete()
+      .eq('id', subassemblyId);
+    
+    if (error) throw error;
+    
+    // Įrašyti į istoriją
+    if (subassemblyData) {
+      try {
+        await productionHistoryAPI.logAction('subassembly', subassemblyId, subassemblyData.name, 'deleted', subassemblyData, null);
+      } catch (historyError) {
+        console.warn('Failed to log history:', historyError);
+      }
+    }
+  },
+
+  async addSubassemblyComponents(subassemblyId, components) {
+    // First, remove existing components
+    await supabase
+      .from('subassembly_components')
+      .delete()
+      .eq('subassembly_id', subassemblyId);
+    
+    // Then add new components
+    if (components.length > 0) {
+      const componentsToInsert = components.map(comp => ({
+        subassembly_id: subassemblyId,
+        component_id: comp.componentId,
+        required_quantity: comp.requiredQuantity
+      }));
+      
+      const { error } = await supabase
+        .from('subassembly_components')
+        .insert(componentsToInsert);
+      
+      if (error) throw error;
+    }
+  },
+
+  async updateSubassemblyParent(subassemblyId, parentId) {
+    const { data, error } = await supabase
+      .from('subassemblies')
+      .update({ parent_id: parentId, updated_at: new Date().toISOString() })
+      .eq('id', subassemblyId)
+      .select()
+      .single();
+    
+    if (error) throw error;
     return data;
   }
 };

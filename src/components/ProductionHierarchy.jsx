@@ -237,63 +237,62 @@ const ProductionHierarchy = () => {
   }, [subassemblies, setSubassemblies, toast]);
 
   const handleAddSubassembly = useCallback((data) => {
-    const newSubassembly = {
-      id: `${selectedCategory}-${Date.now()}`,
+    addSubassembly(selectedCategory, {
       ...data,
       position: { 
         x: 200 + Math.random() * 300, 
         y: 150 + Math.random() * 200 
-      },
-      children: [],
-      components: [],
-      category: selectedCategory
-    };
-
-    const updatedSubassemblies = {
-      ...subassemblies,
-      [selectedCategory]: [...(subassemblies[selectedCategory] || []), newSubassembly]
-    };
-
-    setSubassemblies(updatedSubassemblies);
-    toast({
-      title: "Subasemblis pridėtas!",
-      description: `"${data.name}" sėkmingai pridėtas`
+      }
     });
   }, [selectedCategory, subassemblies, setSubassemblies, toast]);
 
-  const handleImportSubassemblyWithComponents = useCallback((data) => {
-    // Filtruoti tik egzistuojančius komponentus
-    const validComponents = (data.components || []).filter(comp => comp.componentId);
-    
-    const newSubassembly = {
-      id: `${selectedCategory}-${Date.now()}`,
-      name: data.name,
-      quantity: 0,
-      status: 'pending',
-      position: { 
-        x: 200 + Math.random() * 300, 
-        y: 150 + Math.random() * 200 
-      },
-      children: [],
-      components: validComponents,
-      category: selectedCategory,
-      comments: []
-    };
-
-    const updatedSubassemblies = {
-      ...subassemblies,
-      [selectedCategory]: [...(subassemblies[selectedCategory] || []), newSubassembly]
-    };
-
-    setSubassemblies(updatedSubassemblies);
-    
-    // Atnaujinti localStorage
-    localStorage.setItem('production-hierarchy', JSON.stringify(updatedSubassemblies));
-    
-    toast({
-      title: "Subasemblis importuotas!",
-      description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
-    });
+  const handleImportSubassemblyWithComponents = useCallback(async (data) => {
+    try {
+      // Filtruoti tik egzistuojančius komponentus
+      const validComponents = (data.components || []).filter(comp => comp.componentId);
+      
+      // Sukurti subasemblį duomenų bazėje
+      const newSubassembly = await addSubassembly(selectedCategory, {
+        name: data.name,
+        quantity: 0,
+        status: 'pending',
+        position: { 
+          x: 200 + Math.random() * 300, 
+          y: 150 + Math.random() * 200 
+        }
+      });
+      
+      // Pridėti komponentus
+      if (validComponents.length > 0 && newSubassembly) {
+        await subassembliesAPI.addSubassemblyComponents(newSubassembly.id, validComponents);
+        
+        // Atnaujinti lokalų state
+        setSubassemblies(prev => {
+          const newSubassemblies = { ...prev };
+          const categorySubassemblies = newSubassemblies[selectedCategory] || [];
+          const index = categorySubassemblies.findIndex(sa => sa.id === newSubassembly.id);
+          if (index !== -1) {
+            newSubassemblies[selectedCategory][index] = {
+              ...newSubassemblies[selectedCategory][index],
+              components: validComponents
+            };
+          }
+          return newSubassemblies;
+        });
+      }
+      
+      toast({
+        title: "Subasemblis importuotas!",
+        description: `"${data.name}" sėkmingai importuotas su ${validComponents.length} komponentais`
+      });
+    } catch (error) {
+      console.error('Error importing subassembly:', error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko importuoti subasemblio.",
+        variant: "destructive"
+      });
+    }
   }, [selectedCategory, subassemblies, setSubassemblies, toast]);
 
   const handleExcelUpdate = useCallback((data) => {
@@ -316,22 +315,7 @@ const ProductionHierarchy = () => {
   }, [updateComponentStock, updateSubassemblyQuantity, toast]);
   
   const handleUpdateSubassembly = useCallback((id, updates) => {
-    const updatedSubassemblies = { ...subassemblies };
-    
-    for (const category in updatedSubassemblies) {
-      const categorySubassemblies = updatedSubassemblies[category];
-      const index = categorySubassemblies.findIndex(sa => sa.id === id);
-      
-      if (index !== -1) {
-        updatedSubassemblies[category][index] = {
-          ...categorySubassemblies[index],
-          ...updates
-        };
-        break;
-      }
-    }
-    
-    setSubassemblies(updatedSubassemblies);
+    updateSubassembly(id, updates);
     
     if (selectedSubassembly && selectedSubassembly.id === id) {
       setSelectedSubassembly({ ...selectedSubassembly, ...updates });
@@ -339,25 +323,8 @@ const ProductionHierarchy = () => {
   }, [subassemblies, setSubassemblies, selectedSubassembly]);
 
   const handleDeleteSubassembly = useCallback((id) => {
-    const updatedSubassemblies = { ...subassemblies };
-    
-    for (const category in updatedSubassemblies) {
-      updatedSubassemblies[category] = updatedSubassemblies[category].filter(sa => sa.id !== id);
-      
-      updatedSubassemblies[category].forEach(sa => {
-        if (sa.children) {
-          sa.children = sa.children.filter(childId => childId !== id);
-        }
-      });
-    }
-    
-    setSubassemblies(updatedSubassemblies);
+    deleteSubassembly(id);
     setSelectedSubassembly(null);
-    
-    toast({
-      title: "Subasemblis pašalintas",
-      description: "Subasemblis ir visi jo ryšiai pašalinti"
-    });
   }, [subassemblies, setSubassemblies, toast]);
 
   const handleAIQuery = (query) => {
