@@ -147,12 +147,6 @@ export const subassembliesAPI = {
   async getSubassemblies() {
     const { data, error } = await supabase
       .from('subassemblies')
-      .select(`
-        *,
-        category:categories(id, name, color),
-        components:subassembly_components(
-          required_quantity,
-          component:components(id, name, stock)
         )
       `)
       .order('created_at', { ascending: false });
