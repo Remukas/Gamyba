@@ -56,7 +56,7 @@ export const ComponentsProvider = ({ children }) => {
               componentId: comp.component.id,
               requiredQuantity: comp.required_quantity
             })),
-            comments: (sa.comments || []).map(comment => comment.comment)
+            comments: []
           };
           
           groupedSubassemblies[sa.category_id].push(transformedSA);

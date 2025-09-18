@@ -153,10 +153,6 @@ export const subassembliesAPI = {
         components:subassembly_components(
           required_quantity,
           component:components(id, name, stock)
-        ),
-        comments:subassembly_comments(
-          id, comment, created_at,
-          author:users(id, name)
         )
       `)
       .order('created_at', { ascending: false });
