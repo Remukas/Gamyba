@@ -261,72 +261,82 @@ export const productionHistoryAPI = {
 // Inventorizacijos ciklų funkcijos
 export const inventoryCyclesAPI = {
   async getSettings() {
-    const { data, error } = await supabase
-      .from('inventory_cycle_settings')
-      .select('*')
-      .limit(1);
-    
-    if (error) {
-      console.warn('Settings not found, using defaults');
+    try {
+      const { data, error } = await supabase
+        .from('inventory_cycle_settings')
+        .select('*')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      return data || {
+        default_cycle_months: 3,
+        start_date: new Date().toISOString().split('T')[0]
+      };
+    } catch (error) {
+      console.warn('Settings not found, using defaults:', error);
+      return {
+        default_cycle_months: 3,
+        start_date: new Date().toISOString().split('T')[0]
+      };
     }
-    
-    const settings = data && data.length > 0 ? data[0] : null;
-    
-    return settings || {
-      default_cycle_months: 3,
-      start_date: new Date().toISOString().split('T')[0]
-    };
   },
 
   async saveSettings(settings) {
-    // Pirmiausia pabandyti gauti esamą įrašą
-    const { data: existing } = await supabase
-      .from('inventory_cycle_settings')
-      .select('*')
-      .limit(1);
-    
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('User not authenticated');
+
     const settingsData = {
-      user_id: (await supabase.auth.getUser()).data.user?.id,
+      user_id: userId,
       default_cycle_months: settings.defaultCycleMonths,
       start_date: settings.startDate,
       updated_at: new Date().toISOString()
     };
+
+    const { data, error } = await supabase
+      .from('inventory_cycle_settings')
+      .upsert(settingsData, { onConflict: 'user_id' })
+      .select()
+      .single();
     
-    if (existing && existing.length > 0) {
-      // Atnaujinti esamą
-      const { data, error } = await supabase
-        .from('inventory_cycle_settings')
-        .update(settingsData)
-        .eq('id', existing[0].id)
-        .select()
-        .limit(1);
-      
-      if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
-    } else {
-      // Sukurti naują
-      const { data, error } = await supabase
-        .from('inventory_cycle_settings')
-        .insert(settingsData)
-        .select()
-        .limit(1);
-      
-      if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
-    }
+    if (error) throw error;
+    return data;
   },
 
   async getRecords() {
-    const { data, error } = await supabase
-      .from('inventory_records')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data || [];
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) return [];
+
+      const { data, error } = await supabase
+        .from('inventory_records')
+        .select(`
+          *,
+          component:components(name)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to include component name
+      return (data || []).map(record => ({
+        ...record,
+        component_name: record.component?.name || 'Nežinomas komponentas'
+      }));
+    } catch (error) {
+      console.error('Error fetching inventory records:', error);
+      return [];
+    }
   },
 
   async addRecord(record) {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('User not authenticated');
+
     const { data, error } = await supabase
       .from('inventory_records')
       .insert({
@@ -335,8 +345,8 @@ export const inventoryCyclesAPI = {
         actual_stock: record.actualStock,
         notes: record.notes || '',
         inspector: record.inspector,
-        check_date: record.date,
-        user_id: (await supabase.auth.getUser()).data.user?.id
+        check_date: record.date || new Date().toISOString().split('T')[0],
+        user_id: userId
       })
       .select()
       .single();
@@ -345,53 +355,67 @@ export const inventoryCyclesAPI = {
     return data;
   },
 
-  async getComponentOverrides() {
+  async addMultipleRecords(records) {
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('User not authenticated');
+
+    const recordsToInsert = records.map(record => ({
+      component_id: record.componentId,
+      expected_stock: record.expectedStock,
+      actual_stock: record.actualStock,
+      notes: record.notes || '',
+      inspector: record.inspector,
+      check_date: new Date().toISOString().split('T')[0],
+      user_id: userId
+    }));
+
     const { data, error } = await supabase
-      .from('component_cycle_overrides')
-      .select('*');
+      .from('inventory_records')
+      .insert(recordsToInsert)
+      .select();
     
     if (error) throw error;
-    return data || [];
+    return data;
+  },
+
+  async getComponentOverrides() {
+    try {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) return [];
+
+      const { data, error } = await supabase
+        .from('component_cycle_overrides')
+        .select('*')
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching component overrides:', error);
+      return [];
+    }
   },
 
   async saveComponentCycle(componentId, cycleMonths, isCritical = false) {
-    // Pirmiausia pabandyti gauti esamą įrašą
-    const { data: existing } = await supabase
-      .from('component_cycle_overrides')
-      .select('*')
-      .eq('component_id', componentId)
-      .limit(1);
-    
+    const userId = (await supabase.auth.getUser()).data.user?.id;
+    if (!userId) throw new Error('User not authenticated');
+
     const overrideData = {
       component_id: componentId,
       cycle_months: cycleMonths,
       is_critical: isCritical,
-      user_id: (await supabase.auth.getUser()).data.user?.id,
+      user_id: userId,
       updated_at: new Date().toISOString()
     };
+
+    const { data, error } = await supabase
+      .from('component_cycle_overrides')
+      .upsert(overrideData, { onConflict: 'component_id,user_id' })
+      .select()
+      .single();
     
-    if (existing && existing.length > 0) {
-      // Atnaujinti esamą
-      const { data, error } = await supabase
-        .from('component_cycle_overrides')
-        .update(overrideData)
-        .eq('id', existing[0].id)
-        .select()
-        .limit(1);
-      
-      if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
-    } else {
-      // Sukurti naują
-      const { data, error } = await supabase
-        .from('component_cycle_overrides')
-        .insert(overrideData)
-        .select()
-        .limit(1);
-      
-      if (error) throw error;
-      return data && data.length > 0 ? data[0] : null;
-    }
+    if (error) throw error;
+    return data;
   }
 };
 
