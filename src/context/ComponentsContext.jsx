@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
 const ComponentsContext = createContext({
@@ -194,7 +194,7 @@ export const ComponentsProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Filtruoti kategorijas pagal matomumą (tik ne-adminams)
-  const visibleCategories = useMemo(() => {
+  const visibleCategories = React.useMemo(() => {
     // Jei vartotojas yra admin, rodyti visas kategorijas
     // Kitaip rodyti tik matomus
     return categories.filter(category => category.isVisible);
