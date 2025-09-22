@@ -104,6 +104,9 @@ export const AuthProvider = ({ children }) => {
     return currentUser.permissions.includes(permission);
   };
 
+  const isAdmin = () => {
+    return currentUser && currentUser.role === 'admin';
+  };
   const addUser = (userData) => {
     const newUser = {
       ...userData,
@@ -129,6 +132,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     hasPermission,
+    isAdmin,
     addUser,
     updateUser,
     deleteUser,

@@ -39,7 +39,8 @@ const ProductionHierarchy = () => {
   const { 
     subassemblies, 
     setSubassemblies, 
-    categories, 
+    categories,
+    visibleCategories,
     setCategories,
     componentsInventory,
     addOrUpdateInventory,
@@ -49,6 +50,8 @@ const ProductionHierarchy = () => {
     updateSubassembly,
     deleteSubassembly
   } = useComponents();
+  
+  const { isAdmin } = useAuth();
   
   const { toast } = useToast();
   
@@ -100,7 +103,8 @@ const ProductionHierarchy = () => {
   // Calculate progress for each category
   const categoryProgress = useMemo(() => {
     const progress = {};
-    categories.forEach(category => {
+    const categoriesToShow = isAdmin() ? categories : visibleCategories;
+    categoriesToShow.forEach(category => {
       const categorySubassemblies = subassemblies[category.id] || [];
       const totalSubassemblies = categorySubassemblies.length;
       const completedSubassemblies = categorySubassemblies.filter(sa => sa.quantity > 0).length;
@@ -114,7 +118,7 @@ const ProductionHierarchy = () => {
       };
     });
     return progress;
-  }, [categories, subassemblies]);
+  }, [categories, visibleCategories, subassemblies, isAdmin]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarCollapsed(prev => !prev);
@@ -390,7 +394,7 @@ const ProductionHierarchy = () => {
           {/* Category List with Progress */}
           <div className="flex-1 overflow-y-auto">
             <div className="space-y-3">
-              {categories.map(category => {
+              {(isAdmin() ? categories : visibleCategories).map(category => {
                 const categorySubassemblies = subassemblies[category.id] || [];
                 const progress = categoryProgress[category.id] || { percentage: 0, completed: 0, total: 0 };
                 
@@ -407,7 +411,12 @@ const ProductionHierarchy = () => {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
                           <div className={`w-3 h-3 rounded-full ${category.color}`}></div>
-                          <span className="text-sm font-medium">{category.name}</span>
+                          <span className="text-sm font-medium">
+                            {category.name}
+                            {isAdmin() && !category.isVisible && (
+                              <span className="ml-2 text-xs text-red-500">(Paslėpta)</span>
+                            )}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-green-600">

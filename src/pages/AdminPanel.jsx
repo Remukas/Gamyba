@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/context/AuthContext';
+import { useComponents } from '@/context/ComponentsContext';
 import { useToast } from '@/components/ui/use-toast';
 import { 
   Users, 
@@ -34,6 +35,13 @@ import {
 
 const AdminPanel = () => {
   const { currentUser, users, addUser, updateUser, deleteUser } = useAuth();
+  const { 
+    categories, 
+    addCategory, 
+    updateCategory, 
+    deleteCategory, 
+    toggleCategoryVisibility 
+  } = useComponents();
   const { toast } = useToast();
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -47,6 +55,11 @@ const AdminPanel = () => {
     permissions: []
   });
 
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    color: 'bg-blue-500'
+  });
+  const [showAddCategory, setShowAddCategory] = useState(false);
   const rolePermissions = {
     admin: ['all'],
     manager: ['view_analytics', 'manage_production', 'view_quality', 'manage_components', 'view_users'],
@@ -229,12 +242,29 @@ const AdminPanel = () => {
           </Card>
         </motion.div>
       </div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+          <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0 shadow-lg">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-indigo-100">Kategorijos</p>
+                  <p className="text-3xl font-bold">{systemStats.visibleCategories}/{systemStats.totalCategories}</p>
+                </div>
+                <BarChart3 className="h-8 w-8 text-indigo-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 bg-white shadow-sm">
+        <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Vartotojai
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Kategorijos
           </TabsTrigger>
           <TabsTrigger value="permissions" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
