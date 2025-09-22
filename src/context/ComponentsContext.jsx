@@ -194,7 +194,7 @@ export const ComponentsProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Filtruoti kategorijas pagal matomumą (tik ne-adminams)
-  const visibleCategories = React.useMemo(() => {
+  const visibleCategories = useMemo(() => {
     // Jei vartotojas yra admin, rodyti visas kategorijas
     // Kitaip rodyti tik matomus
     return categories.filter(category => category.isVisible);
