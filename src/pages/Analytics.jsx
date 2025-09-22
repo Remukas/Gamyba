@@ -331,13 +331,18 @@ const Analytics = () => {
             <CardContent>
               {analytics.lowStockComponents > 0 ? (
                 <div className="space-y-3">
-                  {componentsInventory
+                  {(isAdmin() ? categories : visibleCategories).map((category, index) => {
                     .filter(c => c.stock < 10)
                     .map(component => (
                       <div key={component.id} className="flex justify-between items-center p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div>
                           <span className="font-medium text-red-900">{component.name}</span>
-                          <p className="text-sm text-red-600">Gavimo laikas: {component.leadTimeDays} d.</p>
+                          <span className="font-medium">
+                            {category.name}
+                            {isAdmin() && !category.isVisible && (
+                              <span className="ml-2 text-xs text-red-500">(Paslėpta)</span>
+                            )}
+                          </span>
                         </div>
                         <Badge className="bg-red-100 text-red-800">
                           {component.stock} vnt.

@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Plus, Trash2, Edit, Package, Save, Search, Warehouse, X } from 'lucide-react';
 import { useComponents } from '@/context/ComponentsContext';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,10 +20,8 @@ const ComponentManagement = () => {
     deleteComponent,
     subassemblies,
     setSubassemblies,
-    categories,
-    visibleCategories
+    categories
   } = useComponents();
-  const { isAdmin } = useAuth();
   const {
     toast
   } = useToast();
