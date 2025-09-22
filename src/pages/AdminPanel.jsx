@@ -23,6 +23,7 @@ import {
   Edit, 
   Trash2, 
   Eye,
+  EyeOff,
   UserCheck,
   UserX,
   Crown,

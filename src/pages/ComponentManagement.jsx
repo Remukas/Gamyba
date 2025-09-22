@@ -19,8 +19,10 @@ const ComponentManagement = () => {
     deleteComponent,
     subassemblies,
     setSubassemblies,
-    categories
+    categories,
+    visibleCategories
   } = useComponents();
+  const { isAdmin } = useAuth();
   const {
     toast
   } = useToast();
