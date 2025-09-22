@@ -177,6 +177,7 @@ const ProductionPlanning = () => {
                                                 value={item.quantityToProduce}
                                                 onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                                                 className="w-20 h-8 text-center"
+                                                min="1"
                                             />
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveFromPlan(item.id)}>
                                                 <Trash2 className="h-4 w-4" />

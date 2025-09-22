@@ -176,7 +176,7 @@ import React, { useState, useMemo, useCallback } from 'react';
                     <CardContent>
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {(isAdmin() ? categories : visibleCategories).map(cat => (
+                                {categories.map(cat => (
                                     <div key={cat.id} className="space-y-2">
                                         <Label htmlFor={`quantity-${cat.id}`}>{cat.name}</Label>
                                         <Input

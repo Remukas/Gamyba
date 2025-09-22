@@ -36,10 +36,10 @@ export const useComponents = () => useContext(ComponentsContext);
 
 // Pradiniai duomenys
 const initialCategories = [
-  { id: 'cart', name: 'Cart', color: 'bg-blue-500', isVisible: true },
-  { id: 'control-unit', name: 'Control Unit', color: 'bg-green-500', isVisible: true },
-  { id: 'frame', name: 'Frame', color: 'bg-purple-500', isVisible: true },
-  { id: 'wheels', name: 'Wheels', color: 'bg-orange-500', isVisible: true }
+  { id: 'cart', name: 'Cart', color: 'bg-blue-500' },
+  { id: 'control-unit', name: 'Control Unit', color: 'bg-green-500' },
+  { id: 'frame', name: 'Frame', color: 'bg-purple-500' },
+  { id: 'wheels', name: 'Wheels', color: 'bg-orange-500' }
 ];
 
 const initialComponents = [
@@ -193,44 +193,6 @@ export const ComponentsProvider = ({ children }) => {
   
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filtruoti kategorijas pagal matomumą (tik ne-adminams)
-  const visibleCategories = useMemo(() => {
-    // Jei vartotojas yra admin, rodyti visas kategorijas
-    // Kitaip rodyti tik matomus
-    return categories.filter(category => category.isVisible);
-  }, [categories]);
-
-  // Funkcija kategorijos matomumo perjungimui (tik adminams)
-  const toggleCategoryVisibility = useCallback((categoryId) => {
-    setCategories(prev => prev.map(cat => 
-      cat.id === categoryId 
-        ? { ...cat, isVisible: !cat.isVisible }
-        : cat
-    ));
-  }, []);
-
-  // Funkcija naujos kategorijos pridėjimui
-  const addCategory = useCallback((categoryData) => {
-    const newCategory = {
-      id: `cat-${Date.now()}`,
-      isVisible: true,
-      ...categoryData
-    };
-    setCategories(prev => [...prev, newCategory]);
-    return newCategory;
-  }, []);
-
-  // Funkcija kategorijos atnaujinimui
-  const updateCategory = useCallback((categoryId, updates) => {
-    setCategories(prev => prev.map(cat => 
-      cat.id === categoryId ? { ...cat, ...updates } : cat
-    ));
-  }, []);
-
-  // Funkcija kategorijos šalinimui
-  const deleteCategory = useCallback((categoryId) => {
-    setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-  }, []);
   // Išsaugoti duomenis į localStorage
   useEffect(() => {
     localStorage.setItem('components-inventory', JSON.stringify(componentsInventory));
@@ -369,7 +331,6 @@ export const ComponentsProvider = ({ children }) => {
     componentsInventory,
     subassemblies,
     categories,
-    visibleCategories,
     isLoading,
     
     // Component functions
@@ -387,10 +348,6 @@ export const ComponentsProvider = ({ children }) => {
     
     // Category functions
     setCategories,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    toggleCategoryVisibility,
     
     // Helper functions
     getAllSubassembliesMap,
